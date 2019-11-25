@@ -168,7 +168,7 @@ impl rustls::StoresClientSessions for ClientSessionCache {
 /// `SSL_CTX_use_certificate_chain_file` and `SSL_CTX_use_PrivateKey_file` to
 /// set the certificates and private key. Otherwise, `SSL_accept` would fail and
 /// return an error code `NoCertificatesPresented`. If the context is created
-/// for a TLS client, no further action is needed as MesaLink has built-in root
+/// for a TLS client, no further action is needed as TabbySSL has built-in root
 /// CA certificates and default ciphersuites. Support for configurable
 /// ciphersuites will be added soon in the next release.
 #[allow(non_camel_case_types)]

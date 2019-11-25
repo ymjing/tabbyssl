@@ -9,13 +9,13 @@
  */
 
 //! # Synopsis
-//! This sub-module implements the error-handling APIs of OpenSSL. MesaLink
+//! This sub-module implements the error-handling APIs of OpenSSL. TabbySSL
 //! follows the same design as OpenSSL and uses a thread-local error queue. A
 //! failed API call typically returns -1/0 and pushes an error code into the
 //! error queue. The error code can be acquired by calling `ERR_get_error` or
 //! `SSL_get_error`.
 //!
-//! MesaLink always use a 32-bit unsigned integer to represent error codes.
+//! TabbySSL always use a 32-bit unsigned integer to represent error codes.
 //!
 //! ```text
 //!  7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0
@@ -25,7 +25,7 @@
 //! ```
 //!
 //! The highest 8 bits represent the source of the error. 0x1: the error comes
-//! from MesaLink itself. For example, a NULL or malformed SSL_CTX pointer is
+//! from TabbySSL itself. For example, a NULL or malformed SSL_CTX pointer is
 //! used. 0x2: the error comes from system I/O. For example, a certificate file
 //! is not found. 0x3: the error is TLS specific. For example, the remote server
 //! does not have a valid certifcate. The lowest 16 bits represent the specific
