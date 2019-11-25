@@ -8,7 +8,7 @@
  *
  */
 
-use super::err::{MesalinkBuiltinError, MesalinkInnerResult};
+use super::err::{MesalinkInnerResult, OpensslError};
 use super::x509::{TABBY_X509, TABBY_X509_NAME};
 use super::{SSL_FAILURE, SSL_SUCCESS};
 use crate::error_san::*;
@@ -69,9 +69,7 @@ pub extern "C" fn tabby_sk_X509_num(stack_ptr: *const TABBY_STACK_TABBY_X509) ->
 }
 
 #[allow(non_snake_case)]
-fn inner_tabby_sk_X509_num(
-    stack_ptr: *const TABBY_STACK_TABBY_X509,
-) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_sk_X509_num(stack_ptr: *const TABBY_STACK_TABBY_X509) -> MesalinkInnerResult<c_int> {
     let stack = sanitize_const_ptr_for_ref(stack_ptr)?;
     Ok(stack.stack.len() as c_int)
 }
@@ -101,7 +99,7 @@ fn inner_tabby_sk_X509_value(
     let item = stack
         .stack
         .get(index as usize)
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     Ok(item as *const TABBY_X509)
 }
 
@@ -117,10 +115,7 @@ pub extern "C" fn tabby_sk_X509_push(
     stack_ptr: *mut TABBY_STACK_TABBY_X509,
     item_ptr: *const TABBY_X509,
 ) -> c_int {
-    check_inner_result!(
-        inner_tabby_sk_X509_push(stack_ptr, item_ptr),
-        SSL_FAILURE
-    )
+    check_inner_result!(inner_tabby_sk_X509_push(stack_ptr, item_ptr), SSL_FAILURE)
 }
 
 #[allow(non_snake_case)]
@@ -148,9 +143,7 @@ pub extern "C" fn tabby_sk_X509_free(stack_ptr: *mut TABBY_STACK_TABBY_X509) {
 }
 
 #[allow(non_snake_case)]
-fn inner_tabby_sk_X509_free(
-    stack_ptr: *mut TABBY_STACK_TABBY_X509,
-) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_sk_X509_free(stack_ptr: *mut TABBY_STACK_TABBY_X509) -> MesalinkInnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(stack_ptr)?;
     let _ = unsafe { Box::from_raw(stack_ptr) };
     Ok(SSL_SUCCESS)
@@ -204,9 +197,7 @@ pub extern "C" fn tabby_sk_X509_NAME_new_null() -> *mut TABBY_STACK_TABBY_X509_N
 /// int sk_X509_NAME_num(const STACK_OF(X509_NAME) *sk);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_sk_X509_NAME_num(
-    stack_ptr: *const TABBY_STACK_TABBY_X509_NAME,
-) -> c_int {
+pub extern "C" fn tabby_sk_X509_NAME_num(stack_ptr: *const TABBY_STACK_TABBY_X509_NAME) -> c_int {
     check_inner_result!(inner_tabby_sk_X509_NAME_num(stack_ptr), SSL_FAILURE)
 }
 
@@ -246,7 +237,7 @@ fn inner_tabby_sk_X509_NAME_value(
     let item = stack
         .stack
         .get(index as usize)
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     Ok(item as *const TABBY_X509_NAME)
 }
 

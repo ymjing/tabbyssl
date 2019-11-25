@@ -31,7 +31,7 @@
 // Module imports
 
 use super::cache::{ClientSessionMemoryCache, ServerSessionMemoryCache};
-use super::err::{ErrorCode, MesalinkBuiltinError, MesalinkError, MesalinkInnerResult};
+use super::err::{ErrorCode, MesalinkError, MesalinkInnerResult, OpensslError};
 use super::safestack::TABBY_STACK_TABBY_X509;
 use super::x509::TABBY_X509;
 use super::{SslSessionCacheModes, SSL_ERROR, SSL_FAILURE, SSL_SUCCESS};
@@ -321,9 +321,7 @@ fn complete_io(
                 Ok(n) => wrlen += n,
                 Err(e) => {
                     return match e.kind() {
-                        io::ErrorKind::WouldBlock => {
-                            Err(error!(MesalinkBuiltinError::WantWrite.into()))
-                        }
+                        io::ErrorKind::WouldBlock => Err(error!(OpensslError::WantWrite.into())),
                         _ => Err(error!(e.into())),
                     };
                 }
@@ -338,9 +336,7 @@ fn complete_io(
                 Ok(n) => rdlen += n,
                 Err(e) => {
                     return match e.kind() {
-                        io::ErrorKind::WouldBlock => {
-                            Err(error!(MesalinkBuiltinError::WantRead.into()))
-                        }
+                        io::ErrorKind::WouldBlock => Err(error!(OpensslError::WantRead.into())),
                         _ => Err(error!(e.into())),
                     };
                 }
@@ -407,7 +403,7 @@ impl TABBY_SSL {
                     }
                 }
             },
-            _ => Err(error!(MesalinkBuiltinError::BadFuncArg.into())),
+            _ => Err(error!(OpensslError::BadFuncArg.into())),
         }
     }
 
@@ -419,14 +415,12 @@ impl TABBY_SSL {
                 match session.write_tls(io) {
                     Ok(_) => Ok(len),
                     Err(e) => match e.kind() {
-                        io::ErrorKind::WouldBlock => {
-                            Err(error!(MesalinkBuiltinError::WantWrite.into()))
-                        }
+                        io::ErrorKind::WouldBlock => Err(error!(OpensslError::WantWrite.into())),
                         _ => Err(error!(e.into())),
                     },
                 }
             }
-            _ => Err(error!(MesalinkBuiltinError::BadFuncArg.into())),
+            _ => Err(error!(OpensslError::BadFuncArg.into())),
         }
     }
 
@@ -438,14 +432,12 @@ impl TABBY_SSL {
                 match session.write_tls(io) {
                     Ok(_) => Ok(()),
                     Err(e) => match e.kind() {
-                        io::ErrorKind::WouldBlock => {
-                            Err(error!(MesalinkBuiltinError::WantWrite.into()))
-                        }
+                        io::ErrorKind::WouldBlock => Err(error!(OpensslError::WantWrite.into())),
                         _ => Err(error!(e.into())),
                     },
                 }
             }
-            _ => Err(error!(MesalinkBuiltinError::BadFuncArg.into())),
+            _ => Err(error!(OpensslError::BadFuncArg.into())),
         }
     }
 
@@ -470,7 +462,7 @@ impl TABBY_SSL {
                     }
                 }
             }
-            _ => Err(error!(MesalinkBuiltinError::BadFuncArg.into())),
+            _ => Err(error!(OpensslError::BadFuncArg.into())),
         }
     }
 }
@@ -800,9 +792,7 @@ pub extern "C" fn tabby_TLSv1_3_server_method() -> *const TABBY_METHOD {
 /// SSL_CTX *SSL_CTX_new(const SSL_METHOD *method);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_SSL_CTX_new(
-    method_ptr: *const TABBY_METHOD,
-) -> *mut TABBY_CTX_ARC {
+pub extern "C" fn tabby_SSL_CTX_new(method_ptr: *const TABBY_METHOD) -> *mut TABBY_CTX_ARC {
     check_inner_result!(inner_tabby_ssl_ctx_new(method_ptr), ptr::null_mut())
 }
 
@@ -844,14 +834,14 @@ fn inner_tabby_ssl_ctx_load_verify_locations(
 ) -> MesalinkInnerResult<c_int> {
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     if cafile_ptr.is_null() && capath_ptr.is_null() {
-        return Err(error!(MesalinkBuiltinError::NullPointer.into()));
+        return Err(error!(OpensslError::NullPointer.into()));
     }
     let ctx = util::get_context_mut(ctx);
     if !cafile_ptr.is_null() {
         let cafile = unsafe {
             ffi::CStr::from_ptr(cafile_ptr)
                 .to_str()
-                .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?
+                .map_err(|_| error!(OpensslError::BadFuncArg.into()))?
         };
         load_cert_into_root_store(ctx, path::Path::new(cafile))?;
     }
@@ -859,13 +849,12 @@ fn inner_tabby_ssl_ctx_load_verify_locations(
         let capath = unsafe {
             ffi::CStr::from_ptr(capath_ptr)
                 .to_str()
-                .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?
+                .map_err(|_| error!(OpensslError::BadFuncArg.into()))?
         };
         let dir = fs::read_dir(path::Path::new(capath))
-            .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
         for file_path in dir {
-            let file_path =
-                file_path.map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+            let file_path = file_path.map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
             load_cert_into_root_store(ctx, &file_path.path())?;
         }
     }
@@ -879,7 +868,7 @@ fn load_cert_into_root_store(ctx: &mut TABBY_CTX, path: &path::Path) -> Mesalink
     let _ = ctx
         .ca_roots
         .add_pem_file(&mut reader)
-        .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
     Ok(())
 }
 
@@ -927,18 +916,18 @@ fn inner_tabby_ssl_ctx_use_certificate_chain_file(
 
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     if filename_ptr.is_null() {
-        return Err(error!(MesalinkBuiltinError::NullPointer.into()));
+        return Err(error!(OpensslError::NullPointer.into()));
     }
     let filename = unsafe {
         ffi::CStr::from_ptr(filename_ptr)
             .to_str()
-            .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?
+            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?
     };
     let file = fs::File::open(filename).map_err(|e| error!(e.into()))?;
     let mut buf_reader = io::BufReader::new(file);
     let certs = pem::get_certificate_chain(&mut buf_reader);
     if certs.is_empty() {
-        return Err(error!(MesalinkBuiltinError::BadFuncArg.into()));
+        return Err(error!(OpensslError::BadFuncArg.into()));
     }
     util::get_context_mut(ctx).certificates = Some(certs);
     Ok(update_ctx_if_both_certs_and_key_set(ctx)?)
@@ -1012,7 +1001,7 @@ fn inner_tabby_ssl_ctx_use_certificate_asn1(
     d: *mut c_uchar,
 ) -> MesalinkInnerResult<c_int> {
     if d.is_null() {
-        return Err(error!(MesalinkBuiltinError::NullPointer.into()));
+        return Err(error!(OpensslError::NullPointer.into()));
     }
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     let buf: &[u8] = unsafe { slice::from_raw_parts_mut(d, len as usize) };
@@ -1116,17 +1105,17 @@ fn inner_tabby_ssl_ctx_use_privatekey_file(
 
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     if filename_ptr.is_null() {
-        return Err(error!(MesalinkBuiltinError::NullPointer.into()));
+        return Err(error!(OpensslError::NullPointer.into()));
     }
     let filename = unsafe {
         ffi::CStr::from_ptr(filename_ptr)
             .to_str()
-            .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?
+            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?
     };
     let file = fs::File::open(filename).map_err(|e| error!(e.into()))?;
     let mut buf_reader = io::BufReader::new(file);
     let key = pem::get_either_rsa_or_ecdsa_private_key(&mut buf_reader)
-        .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
     util::get_context_mut(ctx).private_key = Some(key);
     Ok(update_ctx_if_both_certs_and_key_set(ctx)?)
 }
@@ -1160,7 +1149,7 @@ fn inner_tabby_ssl_ctx_use_privatekey_asn1(
     len: c_long,
 ) -> MesalinkInnerResult<c_int> {
     if d.is_null() {
-        return Err(error!(MesalinkBuiltinError::NullPointer.into()));
+        return Err(error!(OpensslError::NullPointer.into()));
     }
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     let buf: &[u8] = unsafe { slice::from_raw_parts_mut(d, len as usize) };
@@ -1213,10 +1202,7 @@ fn inner_tabby_ssl_use_privatekey_asn1(
 /// ```
 #[no_mangle]
 pub extern "C" fn tabby_SSL_CTX_check_private_key(ctx_ptr: *mut TABBY_CTX_ARC) -> c_int {
-    check_inner_result!(
-        inner_tabby_ssl_ctx_check_private_key(ctx_ptr),
-        SSL_FAILURE
-    )
+    check_inner_result!(inner_tabby_ssl_ctx_check_private_key(ctx_ptr), SSL_FAILURE)
 }
 
 fn inner_tabby_ssl_ctx_check_private_key(
@@ -1227,13 +1213,13 @@ fn inner_tabby_ssl_ctx_check_private_key(
     match (&ctx.certificates, &ctx.private_key) {
         (&Some(ref certs), &Some(ref key)) => {
             let signing_key = sign::any_supported_type(&key)
-                .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+                .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
             sign::CertifiedKey::new(certs.clone(), Arc::new(signing_key))
                 .cross_check_end_entity_cert(None)
                 .map_err(|e| error!(e.into()))?;
             Ok(SSL_SUCCESS)
         }
-        _ => Err(error!(MesalinkBuiltinError::BadFuncArg.into())),
+        _ => Err(error!(OpensslError::BadFuncArg.into())),
     }
 }
 
@@ -1256,7 +1242,7 @@ fn inner_tabby_ssl_check_private_key(ssl_ptr: *mut TABBY_SSL) -> MesalinkInnerRe
     let ctx = ssl
         .context
         .as_ref()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     let ctx_ptr = ctx as *const TABBY_CTX_ARC as *mut TABBY_CTX_ARC;
     inner_tabby_ssl_ctx_check_private_key(ctx_ptr)
 }
@@ -1275,18 +1261,14 @@ pub extern "C" fn tabby_SSL_CTX_set_verify(
     mode: c_int,
     _cb: Option<extern "C" fn(c_int, *mut c_void) -> c_int>,
 ) -> c_int {
-    check_inner_result!(
-        inner_tabby_ssl_ctx_set_verify(ctx_ptr, mode),
-        SSL_FAILURE
-    )
+    check_inner_result!(inner_tabby_ssl_ctx_set_verify(ctx_ptr, mode), SSL_FAILURE)
 }
 
 fn inner_tabby_ssl_ctx_set_verify(
     ctx_ptr: *mut TABBY_CTX_ARC,
     mode: c_int,
 ) -> MesalinkInnerResult<c_int> {
-    let mode =
-        VerifyModes::from_bits(mode).ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+    let mode = VerifyModes::from_bits(mode).ok_or(error!(OpensslError::BadFuncArg.into()))?;
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     if mode == VerifyModes::VERIFY_NONE {
         util::get_context_mut(ctx)
@@ -1295,10 +1277,14 @@ fn inner_tabby_ssl_ctx_set_verify(
             .set_certificate_verifier(Arc::new(NoServerAuth {}));
     } else if mode == VerifyModes::VERIFY_PEER | VerifyModes::VERIFY_FAIL_IF_NO_PEER_CERT {
         let verifier = rustls::AllowAnyAuthenticatedClient::new(ctx.ca_roots.clone());
-        util::get_context_mut(ctx).server_config.set_client_certificate_verifier(verifier);
+        util::get_context_mut(ctx)
+            .server_config
+            .set_client_certificate_verifier(verifier);
     } else if mode == VerifyModes::VERIFY_PEER {
         let verifier = rustls::AllowAnyAnonymousOrAuthenticatedClient::new(ctx.ca_roots.clone());
-        util::get_context_mut(ctx).server_config.set_client_certificate_verifier(verifier);
+        util::get_context_mut(ctx)
+            .server_config
+            .set_client_certificate_verifier(verifier);
     }
     Ok(SSL_SUCCESS)
 }
@@ -1375,9 +1361,7 @@ fn inner_tabby_ssl_ctx_set_session_cache_mode(
 /// long SSL_CTX_get_session_cache_mode(SSL_CTX ctx);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_SSL_CTX_get_session_cache_mode(
-    ctx_ptr: *mut TABBY_CTX_ARC,
-) -> c_long {
+pub extern "C" fn tabby_SSL_CTX_get_session_cache_mode(ctx_ptr: *mut TABBY_CTX_ARC) -> c_long {
     let error_ret: c_long = SSL_ERROR.into();
     check_inner_result!(
         inner_tabby_ssl_ctx_get_session_cache_mode(ctx_ptr),
@@ -1455,10 +1439,7 @@ fn inner_tabby_ssl_ctx_sess_set_cache_size(
 #[no_mangle]
 pub extern "C" fn tabby_SSL_CTX_sess_get_cache_size(ctx_ptr: *mut TABBY_CTX_ARC) -> c_long {
     let error_ret: c_long = SSL_ERROR.into();
-    check_inner_result!(
-        inner_tabby_ssl_ctx_sess_get_cache_size(ctx_ptr),
-        error_ret
-    )
+    check_inner_result!(inner_tabby_ssl_ctx_sess_get_cache_size(ctx_ptr), error_ret)
 }
 
 fn inner_tabby_ssl_ctx_sess_get_cache_size(
@@ -1482,9 +1463,7 @@ pub extern "C" fn tabby_SSL_new(ctx_ptr: *mut TABBY_CTX_ARC) -> *mut TABBY_SSL {
     check_inner_result!(inner_tabby_ssl_new(ctx_ptr), ptr::null_mut())
 }
 
-fn inner_tabby_ssl_new(
-    ctx_ptr: *mut TABBY_CTX_ARC,
-) -> MesalinkInnerResult<*mut TABBY_SSL> {
+fn inner_tabby_ssl_new(ctx_ptr: *mut TABBY_CTX_ARC) -> MesalinkInnerResult<*mut TABBY_SSL> {
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     Ok(Box::into_raw(Box::new(TABBY_SSL::new(ctx))))
 }
@@ -1502,14 +1481,12 @@ pub extern "C" fn tabby_SSL_get_SSL_CTX(ssl_ptr: *mut TABBY_SSL) -> *const TABBY
     check_inner_result!(inner_tabby_ssl_get_ssl_ctx(ssl_ptr), ptr::null())
 }
 
-fn inner_tabby_ssl_get_ssl_ctx(
-    ssl_ptr: *mut TABBY_SSL,
-) -> MesalinkInnerResult<*mut TABBY_CTX_ARC> {
+fn inner_tabby_ssl_get_ssl_ctx(ssl_ptr: *mut TABBY_SSL) -> MesalinkInnerResult<*mut TABBY_CTX_ARC> {
     let ssl = sanitize_ptr_for_ref(ssl_ptr)?;
     let ctx = ssl
         .context
         .as_ref()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     Ok(ctx as *const TABBY_CTX_ARC as *mut TABBY_CTX_ARC)
 }
 
@@ -1525,10 +1502,7 @@ pub extern "C" fn tabby_SSL_set_SSL_CTX(
     ssl_ptr: *mut TABBY_SSL,
     ctx_ptr: *mut TABBY_CTX_ARC,
 ) -> *const TABBY_CTX_ARC {
-    check_inner_result!(
-        inner_tabby_ssl_set_ssl_ctx(ssl_ptr, ctx_ptr),
-        ptr::null()
-    )
+    check_inner_result!(inner_tabby_ssl_set_ssl_ctx(ssl_ptr, ctx_ptr), ptr::null())
 }
 
 fn inner_tabby_ssl_set_ssl_ctx(
@@ -1543,7 +1517,7 @@ fn inner_tabby_ssl_set_ssl_ctx(
     let ctx_ref = ssl
         .context
         .as_ref()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     Ok(ctx_ref as *const TABBY_CTX_ARC)
 }
 
@@ -1558,13 +1532,8 @@ fn inner_tabby_ssl_set_ssl_ctx(
 /// SSL_CIPHER *SSL_get_current_cipher(const SSL *ssl);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_SSL_get_current_cipher(
-    ssl_ptr: *mut TABBY_SSL,
-) -> *mut TABBY_CIPHER {
-    check_inner_result!(
-        inner_tabby_ssl_get_current_cipher(ssl_ptr),
-        ptr::null_mut()
-    )
+pub extern "C" fn tabby_SSL_get_current_cipher(ssl_ptr: *mut TABBY_SSL) -> *mut TABBY_CIPHER {
+    check_inner_result!(inner_tabby_ssl_get_current_cipher(ssl_ptr), ptr::null_mut())
 }
 
 fn inner_tabby_ssl_get_current_cipher(
@@ -1574,11 +1543,11 @@ fn inner_tabby_ssl_get_current_cipher(
     let session = ssl
         .session
         .as_ref()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     let ciphersuite = session
         .read()
         .get_negotiated_ciphersuite()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     Ok(Box::into_raw(Box::new(TABBY_CIPHER::new(ciphersuite)))) // Allocates memory!
 }
 
@@ -1646,7 +1615,7 @@ fn inner_tabby_ssl_cipher_get_bits(
     let ciphersuite = sanitize_ptr_for_ref(cipher_ptr)?;
     unsafe {
         if bits_ptr.is_null() {
-            return Err(error!(MesalinkBuiltinError::NullPointer.into()));
+            return Err(error!(OpensslError::NullPointer.into()));
         }
         ptr::write(bits_ptr, ciphersuite.ciphersuite.enc_key_len as c_int);
     }
@@ -1665,13 +1634,8 @@ fn inner_tabby_ssl_cipher_get_bits(
 /// char *SSL_CIPHER_get_version(const SSL_CIPHER *cipher);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_SSL_CIPHER_get_version(
-    cipher_ptr: *mut TABBY_CIPHER,
-) -> *const c_char {
-    check_inner_result!(
-        inner_tabby_ssl_cipher_get_version(cipher_ptr),
-        ptr::null()
-    )
+pub extern "C" fn tabby_SSL_CIPHER_get_version(cipher_ptr: *mut TABBY_CIPHER) -> *const c_char {
+    check_inner_result!(inner_tabby_ssl_cipher_get_version(cipher_ptr), ptr::null())
 }
 
 fn inner_tabby_ssl_cipher_get_version(
@@ -1762,9 +1726,7 @@ pub extern "C" fn tabby_SSL_get_cipher_version(ssl_ptr: *mut TABBY_SSL) -> *cons
 /// X509 *SSL_get_peer_certificate(const SSL *ssl);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_SSL_get_peer_certificate(
-    ssl_ptr: *mut TABBY_SSL,
-) -> *mut TABBY_X509 {
+pub extern "C" fn tabby_SSL_get_peer_certificate(ssl_ptr: *mut TABBY_SSL) -> *mut TABBY_X509 {
     check_inner_result!(
         inner_tabby_ssl_get_peer_certificate(ssl_ptr),
         ptr::null_mut()
@@ -1816,14 +1778,14 @@ fn get_peer_certificates(ssl: &TABBY_SSL) -> MesalinkInnerResult<Vec<rustls::Cer
     let session = ssl
         .session
         .as_ref()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     session
         .read()
         .get_peer_certificates()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))
+        .ok_or(error!(OpensslError::BadFuncArg.into()))
         .and_then(|certs| {
             if certs.is_empty() {
-                Err(error!(MesalinkBuiltinError::BadFuncArg.into()))
+                Err(error!(OpensslError::BadFuncArg.into()))
             } else {
                 Ok(certs)
             }
@@ -1855,15 +1817,15 @@ fn inner_tabby_ssl_set_tlsext_host_name(
 ) -> MesalinkInnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     if hostname_ptr.is_null() {
-        return Err(error!(MesalinkBuiltinError::NullPointer.into()));
+        return Err(error!(OpensslError::NullPointer.into()));
     }
     let hostname = unsafe {
         ffi::CStr::from_ptr(hostname_ptr)
             .to_str()
-            .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?
+            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?
     };
     let _ = webpki::DNSNameRef::try_from_ascii_str(hostname)
-        .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
     ssl.hostname = Some(hostname.to_owned());
     Ok(SSL_SUCCESS)
 }
@@ -1897,7 +1859,7 @@ pub extern "C" fn tabby_SSL_set_fd(ssl_ptr: *mut TABBY_SSL, fd: c_int) -> c_int 
 fn inner_tabby_ssl_set_fd(ssl_ptr: *mut TABBY_SSL, fd: c_int) -> MesalinkInnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     if fd < 0 {
-        return Err(error!(MesalinkBuiltinError::BadFuncArg.into()));
+        return Err(error!(OpensslError::BadFuncArg.into()));
     }
     let socket = unsafe { net::TcpStream::from_raw_fd(fd) };
     ssl.io = Some(socket);
@@ -1933,7 +1895,7 @@ fn inner_measlink_ssl_get_fd(ssl_ptr: *mut TABBY_SSL) -> MesalinkInnerResult<c_i
     let socket = ssl
         .io
         .as_ref()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     Ok(socket.as_raw_fd())
 }
 
@@ -1959,7 +1921,7 @@ fn inner_tabby_ssl_set_socket(
 ) -> MesalinkInnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     if sock == 0 {
-        return Err(error!(MesalinkBuiltinError::BadFuncArg.into()));
+        return Err(error!(OpensslError::BadFuncArg.into()));
     }
     let socket = unsafe { net::TcpStream::from_raw_socket(sock as std::os::windows::raw::SOCKET) };
     ssl.io = Some(socket);
@@ -1985,7 +1947,7 @@ fn inner_measlink_ssl_get_socket(ssl_ptr: *mut TABBY_SSL) -> MesalinkInnerResult
     let socket = ssl
         .io
         .as_ref()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     Ok(socket.as_raw_socket() as usize)
 }
 
@@ -2066,11 +2028,11 @@ fn inner_tabby_ssl_do_handshake(ssl_ptr: *mut TABBY_SSL) -> MesalinkInnerResult<
 
 fn setup_ssl_if_ready(ssl: &mut TABBY_SSL) -> MesalinkInnerResult<c_int> {
     match ssl.error {
-        ErrorCode::MesalinkErrorNone
-        | ErrorCode::MesalinkErrorWantRead
-        | ErrorCode::MesalinkErrorWantWrite
-        | ErrorCode::MesalinkErrorWantConnect
-        | ErrorCode::MesalinkErrorWantAccept => ssl.error = ErrorCode::default(),
+        ErrorCode::OpensslErrorNone
+        | ErrorCode::OpensslErrorWantRead
+        | ErrorCode::OpensslErrorWantWrite
+        | ErrorCode::OpensslErrorWantConnect
+        | ErrorCode::OpensslErrorWantAccept => ssl.error = ErrorCode::default(),
         _ => (),
     };
 
@@ -2080,10 +2042,10 @@ fn setup_ssl_if_ready(ssl: &mut TABBY_SSL) -> MesalinkInnerResult<c_int> {
                 let hostname = ssl
                     .hostname
                     .as_ref()
-                    .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?
+                    .ok_or(error!(OpensslError::BadFuncArg.into()))?
                     .clone();
                 let dnsname = webpki::DNSNameRef::try_from_ascii_str(&hostname)
-                    .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+                    .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
                 let client_session = rustls::ClientSession::new(&ssl.client_config, dnsname);
                 ssl.session = Some(RwLock::new(ClientOrServerSession::Client(client_session)));
             }
@@ -2105,8 +2067,8 @@ fn do_handshake(ssl: &mut TABBY_SSL) -> MesalinkInnerResult<c_int> {
                     Err(e) => {
                         ssl.error = ErrorCode::from(&e);
                         match ssl.error {
-                            ErrorCode::MesalinkErrorWantRead
-                            | ErrorCode::MesalinkErrorWantWrite
+                            ErrorCode::OpensslErrorWantRead
+                            | ErrorCode::OpensslErrorWantWrite
                             | ErrorCode::IoErrorNotConnected => Ok(SSL_ERROR),
                             _ => Err(e),
                         }
@@ -2117,7 +2079,7 @@ fn do_handshake(ssl: &mut TABBY_SSL) -> MesalinkInnerResult<c_int> {
                 Ok(SSL_SUCCESS)
             }
         }
-        _ => Err(error!(MesalinkBuiltinError::BadFuncArg.into())),
+        _ => Err(error!(OpensslError::BadFuncArg.into())),
     }
 }
 
@@ -2149,10 +2111,7 @@ pub extern "C" fn tabby_SSL_connect0(ssl_ptr: *mut TABBY_SSL) -> c_int {
     check_inner_result!(inner_tabby_ssl_connect(ssl_ptr, true), SSL_FAILURE)
 }
 
-fn inner_tabby_ssl_connect(
-    ssl_ptr: *mut TABBY_SSL,
-    is_lazy: bool,
-) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_ssl_connect(ssl_ptr: *mut TABBY_SSL, is_lazy: bool) -> MesalinkInnerResult<c_int> {
     let mut ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     ssl.mode = ClientOrServerMode::Client;
 
@@ -2197,10 +2156,7 @@ pub extern "C" fn tabby_SSL_get_error(ssl_ptr: *mut TABBY_SSL, ret: c_int) -> c_
     check_inner_result!(inner_tabby_ssl_get_error(ssl_ptr, ret), SSL_FAILURE)
 }
 
-fn inner_tabby_ssl_get_error(
-    ssl_ptr: *mut TABBY_SSL,
-    ret: c_int,
-) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_ssl_get_error(ssl_ptr: *mut TABBY_SSL, ret: c_int) -> MesalinkInnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     if ret > 0 {
         Ok(0)
@@ -2223,10 +2179,7 @@ pub extern "C" fn tabby_SSL_read(
     buf_ptr: *mut c_uchar,
     buf_len: c_int,
 ) -> c_int {
-    check_inner_result!(
-        inner_tabby_ssl_read(ssl_ptr, buf_ptr, buf_len),
-        SSL_FAILURE
-    )
+    check_inner_result!(inner_tabby_ssl_read(ssl_ptr, buf_ptr, buf_len), SSL_FAILURE)
 }
 
 fn inner_tabby_ssl_read(
@@ -2235,7 +2188,7 @@ fn inner_tabby_ssl_read(
     buf_len: c_int,
 ) -> MesalinkInnerResult<c_int> {
     if buf_ptr.is_null() || buf_len < 0 {
-        return Err(error!(MesalinkBuiltinError::BadFuncArg.into()));
+        return Err(error!(OpensslError::BadFuncArg.into()));
     }
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     let buf = unsafe { slice::from_raw_parts_mut(buf_ptr, buf_len as usize) };
@@ -2245,11 +2198,11 @@ fn inner_tabby_ssl_read(
             let error_code = ErrorCode::from(&e);
             ssl.error = ErrorCode::from(&e);
             if error_code == ErrorCode::IoErrorWouldBlock {
-                ssl.error = ErrorCode::MesalinkErrorWantRead;
+                ssl.error = ErrorCode::OpensslErrorWantRead;
             } else {
                 ssl.error = error_code;
             }
-            if ssl.error == ErrorCode::MesalinkErrorWantRead
+            if ssl.error == ErrorCode::OpensslErrorWantRead
                 || ssl.error == ErrorCode::IoErrorNotConnected
             {
                 return Ok(SSL_ERROR);
@@ -2285,7 +2238,7 @@ fn inner_tabby_ssl_write(
     buf_len: c_int,
 ) -> MesalinkInnerResult<c_int> {
     if buf_ptr.is_null() || buf_len < 0 {
-        return Err(error!(MesalinkBuiltinError::BadFuncArg.into()));
+        return Err(error!(OpensslError::BadFuncArg.into()));
     }
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     let buf = unsafe { slice::from_raw_parts(buf_ptr, buf_len as usize) };
@@ -2344,10 +2297,10 @@ fn inner_tabby_ssl_write_early_data(
     written_len_ptr: *mut size_t,
 ) -> MesalinkInnerResult<c_int> {
     if buf_ptr.is_null() || buf_len < 0 {
-        return Err(error!(MesalinkBuiltinError::BadFuncArg.into()));
+        return Err(error!(OpensslError::BadFuncArg.into()));
     }
     if written_len_ptr.is_null() {
-        return Err(error!(MesalinkBuiltinError::NullPointer.into()));
+        return Err(error!(OpensslError::NullPointer.into()));
     }
     let _ = inner_tabby_ssl_connect(ssl_ptr, true)?; // creates a client session
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
@@ -2376,20 +2329,15 @@ fn inner_tabby_ssl_write_early_data(
 /// ```
 #[no_mangle]
 pub extern "C" fn tabby_SSL_get_early_data_status(ssl_ptr: *mut TABBY_SSL) -> c_int {
-    check_inner_result!(
-        inner_tabby_ssl_get_early_data_status(ssl_ptr),
-        SSL_FAILURE
-    )
+    check_inner_result!(inner_tabby_ssl_get_early_data_status(ssl_ptr), SSL_FAILURE)
 }
 
-fn inner_tabby_ssl_get_early_data_status(
-    ssl_ptr: *mut TABBY_SSL,
-) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_ssl_get_early_data_status(ssl_ptr: *mut TABBY_SSL) -> MesalinkInnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     let session = ssl
         .session
         .as_mut()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     let mut session = session.write();
     if session.deref_mut().assert_client().is_early_data_accepted() {
         Ok(2)
@@ -2415,7 +2363,7 @@ fn inner_tabby_ssl_shutdown(ssl_ptr: *mut TABBY_SSL) -> MesalinkInnerResult<c_in
     let session = ssl
         .session
         .as_mut()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     session.write().send_close_notify();
     Ok(SSL_SUCCESS)
 }
@@ -2432,18 +2380,16 @@ pub extern "C" fn tabby_SSL_get_version(ssl_ptr: *mut TABBY_SSL) -> *const c_cha
     check_inner_result!(inner_tabby_ssl_get_version(ssl_ptr), ptr::null())
 }
 
-fn inner_tabby_ssl_get_version(
-    ssl_ptr: *mut TABBY_SSL,
-) -> MesalinkInnerResult<*const c_char> {
+fn inner_tabby_ssl_get_version(ssl_ptr: *mut TABBY_SSL) -> MesalinkInnerResult<*const c_char> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     let session = ssl
         .session
         .as_ref()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     let version = session
         .read()
         .get_protocol_version()
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     match version {
         rustls::ProtocolVersion::TLSv1_2 => Ok(util::CONST_TLS12_STR.as_ptr() as *const c_char),
         rustls::ProtocolVersion::TLSv1_3 => Ok(util::CONST_TLS13_STR.as_ptr() as *const c_char),
@@ -2566,8 +2512,7 @@ mod tests {
         ) -> Result<MesalinkTestSession, ()> {
             let ctx = tabby_SSL_CTX_new(method);
             assert_ne!(ctx, ptr::null_mut(), "CTX is null");
-            let _ =
-                tabby_SSL_CTX_set_session_cache_mode(ctx, SslSessionCacheModes::Both as c_long);
+            let _ = tabby_SSL_CTX_set_session_cache_mode(ctx, SslSessionCacheModes::Both as c_long);
             assert_eq!(
                 SSL_SUCCESS,
                 tabby_SSL_CTX_use_certificate_chain_file(
@@ -2961,10 +2906,7 @@ mod tests {
             SSL_ERROR,
             tabby_SSL_read(ssl, buf.as_mut_ptr() as *mut c_uchar, 64)
         );
-        assert_eq!(
-            64,
-            tabby_SSL_write(ssl, buf.as_ptr() as *const c_uchar, 64)
-        );
+        assert_eq!(64, tabby_SSL_write(ssl, buf.as_ptr() as *const c_uchar, 64));
         assert_eq!(SSL_SUCCESS, tabby_SSL_flush(ssl));
 
         tabby_SSL_free(ssl);
@@ -3154,10 +3096,7 @@ mod tests {
             ptr::null_mut(),
         );
         assert_ne!(pkey_ptr, ptr::null_mut());
-        assert_eq!(
-            SSL_SUCCESS,
-            tabby_SSL_CTX_use_PrivateKey(ctx_ptr, pkey_ptr)
-        );
+        assert_eq!(SSL_SUCCESS, tabby_SSL_CTX_use_PrivateKey(ctx_ptr, pkey_ptr));
 
         // Load the end entity cert
         let bio_x509_cert_ptr = bio::tabby_BIO_new_file(
@@ -3394,10 +3333,7 @@ mod tests {
         assert_eq!(tabby_SSL_CTX_sess_set_cache_size(ctx_ptr, 200), 100);
         // Set the cache mode to Client
         assert_eq!(
-            tabby_SSL_CTX_set_session_cache_mode(
-                ctx_ptr,
-                SslSessionCacheModes::Client as c_long
-            ),
+            tabby_SSL_CTX_set_session_cache_mode(ctx_ptr, SslSessionCacheModes::Client as c_long),
             SslSessionCacheModes::Off as c_long
         );
         assert_eq!(
@@ -3410,10 +3346,7 @@ mod tests {
         assert_eq!(tabby_SSL_CTX_sess_set_cache_size(ctx_ptr, 300), 200);
         // Set the cache mode to Server
         assert_eq!(
-            tabby_SSL_CTX_set_session_cache_mode(
-                ctx_ptr,
-                SslSessionCacheModes::Server as c_long
-            ),
+            tabby_SSL_CTX_set_session_cache_mode(ctx_ptr, SslSessionCacheModes::Server as c_long),
             SslSessionCacheModes::Client as c_long
         );
         // Now the cache mode is Server
@@ -3437,7 +3370,7 @@ mod tests {
     }
 
     #[test]
-    fn early_data_to_tabby_io() {
+    fn early_data_to_yimingjing_com() {
         const HTTP_REQUEST: &[u8; 83] = b"GET / HTTP/1.1\r\n\
             Host: mesalink.io\r\n\
             Connection: close\r\n\
@@ -3446,8 +3379,7 @@ mod tests {
 
         let method = tabby_TLSv1_3_client_method();
         let ctx = tabby_SSL_CTX_new(method);
-        let _ =
-            tabby_SSL_CTX_set_session_cache_mode(ctx, SslSessionCacheModes::Client as c_long);
+        let _ = tabby_SSL_CTX_set_session_cache_mode(ctx, SslSessionCacheModes::Client as c_long);
 
         for i in 0..2 {
             tabby_ERR_clear_error();
@@ -3456,10 +3388,10 @@ mod tests {
             assert_ne!(ssl, ptr::null_mut(), "SSL is null");
             assert_eq!(
                 SSL_SUCCESS,
-                tabby_SSL_set_tlsext_host_name(ssl, b"mesalink.io\0".as_ptr() as *const c_char),
+                tabby_SSL_set_tlsext_host_name(ssl, b"yimingjing.com\0".as_ptr() as *const c_char),
                 "Failed to set SNI"
             );
-            let sock = net::TcpStream::connect("mesalink.io:443").expect("Failed to connect");
+            let sock = net::TcpStream::connect("yimingjing.com:443").expect("Failed to connect");
             assert_eq!(SSL_SUCCESS, tabby_SSL_set_fd(ssl, sock.as_raw_fd()),);
 
             let early_written_len_ptr = Box::into_raw(Box::new(0));

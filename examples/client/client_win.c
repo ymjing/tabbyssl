@@ -48,7 +48,7 @@ int __cdecl main(int argc, char **argv)
     return 1;
   }
 
-  // Initialize MesaLink
+  // Initialize
   ctx = SSL_CTX_new(SSLv23_client_method());
   ssl = SSL_new(ctx);
   char hostname_buf[256] = { 0 };

@@ -40,10 +40,10 @@ macro_rules! error {
 #[macro_export]
 macro_rules! check_inner_result {
     ($inner:expr, $err_ret:expr) => {{
-        use crate::libssl::err::{ErrorQueue, MesalinkBuiltinError};
+        use crate::libssl::err::{ErrorQueue, OpensslError};
         use std::panic;
         match panic::catch_unwind(panic::AssertUnwindSafe(|| $inner))
-            .unwrap_or_else(|_| Err(error!(MesalinkBuiltinError::Panic.into())))
+            .unwrap_or_else(|_| Err(error!(OpensslError::Panic.into())))
         {
             Ok(r) => r,
             Err(e) => {

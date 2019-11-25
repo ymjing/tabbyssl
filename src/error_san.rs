@@ -8,7 +8,7 @@
  *
  */
 
-use crate::libssl::err::{MesalinkBuiltinError, MesalinkInnerResult};
+use crate::libssl::err::{MesalinkInnerResult, OpensslError};
 use crate::OpaquePointerGuard;
 
 pub(crate) fn sanitize_const_ptr_for_ref<'a, T>(ptr: *const T) -> MesalinkInnerResult<&'a T>
@@ -29,12 +29,12 @@ where
     T: OpaquePointerGuard,
 {
     if ptr.is_null() {
-        return Err(error!(MesalinkBuiltinError::NullPointer.into()));
+        return Err(error!(OpensslError::NullPointer.into()));
     }
     let obj_ref: &mut T = unsafe { &mut *ptr };
     if obj_ref.check_magic() {
         Ok(obj_ref)
     } else {
-        Err(error!(MesalinkBuiltinError::MalformedObject.into()))
+        Err(error!(OpensslError::MalformedObject.into()))
     }
 }

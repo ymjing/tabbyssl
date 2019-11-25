@@ -26,7 +26,7 @@ main(int argc, char *argv[])
   const char *cert_file;
   const char *key_file;
   const char *response = "HTTP/1.0 200 OK\r\nConnection: "
-                         "close\r\n\r\n<html><body><pre>Hello from MesaLink "
+                         "close\r\n\r\n<html><body><pre>Hello from TabbySSL "
                          "server</pre></body></html>\r\n";
 
   SSL_CTX *ctx;

@@ -15,7 +15,7 @@ use crate::error_san::*;
 use crate::libssl::x509::TABBY_X509;
 use libc::c_void;
 //use libcrypto::{CRYPTO_FAILURE, CRYPTO_SUCCESS};
-use crate::libssl::err::{MesalinkBuiltinError, MesalinkInnerResult};
+use crate::libssl::err::{MesalinkInnerResult, OpensslError};
 use std::io::{Read, Seek};
 use std::{io, ptr};
 
@@ -49,7 +49,7 @@ fn inner_tabby_pem_read_bio_privatekey(
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let mut buf_reader = io::BufReader::with_capacity(1, bio);
     let key = get_either_rsa_or_ecdsa_private_key(&mut buf_reader)
-        .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
     let pkey = TABBY_EVP_PKEY::new(key);
     let pkey_ptr = Box::into_raw(Box::new(pkey)) as *mut TABBY_EVP_PKEY;
 
@@ -114,8 +114,8 @@ fn inner_tabby_pem_read_bio_x509(
 ) -> MesalinkInnerResult<*mut TABBY_X509> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let mut buf_reader = io::BufReader::with_capacity(1, bio);
-    let cert = get_certificate(&mut buf_reader)
-        .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+    let cert =
+        get_certificate(&mut buf_reader).map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
     let x509 = TABBY_X509::new(cert);
     let x509_ptr = Box::into_raw(Box::new(x509)) as *mut TABBY_X509;
     if !x509_pp.is_null() {
@@ -284,8 +284,7 @@ mod test {
         let file = fs::File::open("tests/end.fullchain").unwrap(); // Read-only, "r"
         let fp = unsafe { file.open_file_stream_r() };
         assert_ne!(fp, ptr::null_mut());
-        let x509_ptr =
-            tabby_PEM_read_X509(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
+        let x509_ptr = tabby_PEM_read_X509(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
         assert_ne!(x509_ptr, ptr::null_mut());
         x509::tabby_X509_free(x509_ptr);
     }

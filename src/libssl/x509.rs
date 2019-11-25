@@ -8,7 +8,7 @@
  *
  */
 
-use super::err::{MesalinkBuiltinError, MesalinkInnerResult};
+use super::err::{MesalinkInnerResult, OpensslError};
 use super::safestack::TABBY_STACK_TABBY_X509_NAME;
 use super::{SSL_FAILURE, SSL_SUCCESS};
 use crate::error_san::*;
@@ -158,12 +158,12 @@ fn inner_tabby_x509_get_alt_subject_names(
     let cert: Cert = unsafe { std::mem::transmute(x509) };
     let subject_alt_name = cert
         .subject_alt_name
-        .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
     let mut reader = untrusted::Reader::new(subject_alt_name);
     let mut stack = TABBY_STACK_TABBY_X509_NAME::new(Vec::new());
     while !reader.at_end() {
         let (tag, value) = der::read_tag_and_get_value(&mut reader)
-            .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
         if tag == 0x82 {
             let x509_name = TABBY_X509_NAME::new(value.as_slice_less_safe());
             stack.stack.push(x509_name);
@@ -247,52 +247,49 @@ fn inner_tabby_x509_get_subject_name(
     let cert: Cert = unsafe { std::mem::transmute(x509) };
     let _ = cert
         .subject
-        .read_all(error!(MesalinkBuiltinError::BadFuncArg.into()), |subject| {
+        .read_all(error!(OpensslError::BadFuncArg.into()), |subject| {
             while !subject.at_end() {
                 let (maybe_asn_set_tag, sequence) = der::read_tag_and_get_value(subject)
-                    .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+                    .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
                 if (maybe_asn_set_tag as usize) != 0x31 {
                     // Subject should be an ASN.1 SET
-                    return Err(error!(MesalinkBuiltinError::BadFuncArg.into()));
+                    return Err(error!(OpensslError::BadFuncArg.into()));
                 }
-                let _ = sequence.read_all(error!(MesalinkBuiltinError::BadFuncArg.into()), |seq| {
+                let _ = sequence.read_all(error!(OpensslError::BadFuncArg.into()), |seq| {
                     let oid_and_data = der::expect_tag_and_get_value(seq, der::Tag::Sequence)
-                        .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
-                    oid_and_data.read_all(
-                        error!(MesalinkBuiltinError::BadFuncArg.into()),
-                        |oid_and_data| {
-                            let oid = der::expect_tag_and_get_value(oid_and_data, der::Tag::OID)
-                                .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
-                            let (_, value) = der::read_tag_and_get_value(oid_and_data)
-                                .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
+                        .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+                    oid_and_data.read_all(error!(OpensslError::BadFuncArg.into()), |oid_and_data| {
+                        let oid = der::expect_tag_and_get_value(oid_and_data, der::Tag::OID)
+                            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+                        let (_, value) = der::read_tag_and_get_value(oid_and_data)
+                            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
 
-                            let keyword = match oid.as_slice_less_safe().last().unwrap() {
-                                // RFC 1779, X.500 attrinutes, oid 2.5.4
-                                3 => "CN",  // CommonName
-                                7 => "L",   // LocalityName
-                                8 => "ST",  // StateOrProvinceName
-                                10 => "O",  // OrganizationName
-                                11 => "OU", // OrganizationalUnitName
-                                6 => "C",   // CountryName
-                                _ => "",
-                            };
+                        let keyword = match oid.as_slice_less_safe().last().unwrap() {
+                            // RFC 1779, X.500 attrinutes, oid 2.5.4
+                            3 => "CN",  // CommonName
+                            7 => "L",   // LocalityName
+                            8 => "ST",  // StateOrProvinceName
+                            10 => "O",  // OrganizationName
+                            11 => "OU", // OrganizationalUnitName
+                            6 => "C",   // CountryName
+                            _ => "",
+                        };
 
-                            if !keyword.is_empty() {
-                                if let Ok(s) = str::from_utf8(value.as_slice_less_safe()) {
-                                    subject_name.push_str("/");
-                                    subject_name.push_str(keyword);
-                                    subject_name.push_str("=");
-                                    subject_name.push_str(s);
-                                }
+                        if !keyword.is_empty() {
+                            if let Ok(s) = str::from_utf8(value.as_slice_less_safe()) {
+                                subject_name.push_str("/");
+                                subject_name.push_str(keyword);
+                                subject_name.push_str("=");
+                                subject_name.push_str(s);
                             }
-                            Ok(())
-                        },
-                    )
+                        }
+                        Ok(())
+                    })
                 });
             }
             Ok(())
         })
-        .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()));
+        .map_err(|_| error!(OpensslError::BadFuncArg.into()));
 
     let x509_name = TABBY_X509_NAME::new(subject_name.as_bytes());
     Ok(Box::into_raw(Box::new(x509_name)) as *mut TABBY_X509_NAME)
@@ -331,7 +328,7 @@ fn inner_tabby_x509_name_oneline(
         let name: &[c_char] = &*(x509_name.name.as_slice() as *const [u8] as *const [c_char]);
         let name_len: usize = name.len();
         if buf_ptr.is_null() {
-            return Err(error!(MesalinkBuiltinError::NullPointer.into()));
+            return Err(error!(OpensslError::NullPointer.into()));
         }
         let buf = slice::from_raw_parts_mut(buf_ptr, buf_len);
         if name_len + 1 > buf_len {
