@@ -3,7 +3,7 @@ steps:
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     inputs:
       gitHubConnection: 'tabbyssl'
-      repositoryName: 'mesalock-linux/tabbyssl'
+      repositoryName: 'ymjing/tabbyssl'
       action: 'edit'
       target: '$(build.sourceVersion)'
       tag: '$(build.my_tag)'
