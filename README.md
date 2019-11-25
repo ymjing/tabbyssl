@@ -1,7 +1,8 @@
 <p align="center"><img src="logo.png" height="86" /></p>
-<h1 align="center"> A memory-safe and OpenSSL-compatible TLS library </h1>
+<h1 align="center">OpenSSL compatibility layer for the Rust SSL/TLS stack</h1>
+
 [![Build Status](https://travis-ci.com/ymjing/tabbyssl.svg?branch=master)](https://travis-ci.com/ymjing/tabbyssl)
-[![Build Status](https://dev.azure.com/mesalink/TabbySSL/_apis/build/status/ymjing.tabbyssl?branchName=master)](https://dev.azure.com/mesalink/TabbySSL/_build/latest?definitionId=2&branchName=master)
+[![Build Status](https://dev.azure.com/tabbyssl/TabbySSL/_apis/build/status/ymjing.tabbyssl?branchName=master)](https://dev.azure.com/tabbyssl/TabbySSL/_build/latest?definitionId=1&branchName=master)
 [![Coverage Status](https://codecov.io/gh/ymjing/tabbyssl/branch/master/graph/badge.svg)](https://codecov.io/gh/ymjing/tabbyssl)
 [![Release](https://img.shields.io/github/release/mesalock-linux/tabbyssl.svg)](https://github.com/mesalock-linux/tabbyssl/releases)
 [![License](https://img.shields.io/badge/license-BSD-blue.svg)](LICENSE)
