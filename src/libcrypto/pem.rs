@@ -1,11 +1,6 @@
 /*
- *   __  __                 _     _       _
- *  |  \/  | ___  ___  __ _| |   (_)_ __ | | __
- *  | |\/| |/ _ \/ __|/ _` | |   | | '_ \| |/ /
- *  | |  | |  __/\__ \ (_| | |___| | | | |   <
- *  |_|  |_|\___||___/\__,_|_____|_|_| |_|_|\_\
- *
- * Copyright (c) 2017-2019, The MesaLink Authors.
+ * Copyright (c) 2019, Yiming Jing
+ * Copyright (c) 2017-2019, The MesaLink Authors
  * All rights reserved.
  *
  * This work is licensed under the terms of the BSD 3-Clause License.
@@ -14,13 +9,13 @@
  */
 
 use super::bio;
-use super::bio::MESALINK_BIO;
-use super::evp::MESALINK_EVP_PKEY;
+use super::bio::TABBY_BIO;
+use super::evp::TABBY_EVP_PKEY;
 use crate::error_san::*;
-use crate::libssl::x509::MESALINK_X509;
+use crate::libssl::x509::TABBY_X509;
 use libc::c_void;
 //use libcrypto::{CRYPTO_FAILURE, CRYPTO_SUCCESS};
-use crate::libssl::err::{MesalinkBuiltinError, MesalinkInnerResult};
+use crate::libssl::err::{InnerResult, OpensslError};
 use std::io::{Read, Seek};
 use std::{io, ptr};
 
@@ -28,35 +23,35 @@ use std::{io, ptr};
 /// multiple keys in the bio, only the first one is read.
 ///
 /// ```c
-/// #include <mesalink/openssl/pem.h>
+/// #include <tabbyssl/openssl/pem.h>
 ///
 /// EVP_PKEY *PEM_read_bio_PrivateKey(BIO *bio, EVP_PKEY **x,
 ///                                        pem_password_cb *cb, void *u);
 /// ```
 ///
 #[no_mangle]
-pub extern "C" fn mesalink_PEM_read_bio_PrivateKey(
-    bio_ptr: *mut MESALINK_BIO<'_>,
-    pkey_pp: *mut *mut MESALINK_EVP_PKEY,
+pub extern "C" fn tabby_PEM_read_bio_PrivateKey(
+    bio_ptr: *mut TABBY_BIO<'_>,
+    pkey_pp: *mut *mut TABBY_EVP_PKEY,
     _cb: *mut c_void,
     _u: *mut c_void,
-) -> *mut MESALINK_EVP_PKEY {
+) -> *mut TABBY_EVP_PKEY {
     check_inner_result!(
-        inner_mesalink_pem_read_bio_privatekey(bio_ptr, pkey_pp),
+        inner_tabby_pem_read_bio_privatekey(bio_ptr, pkey_pp),
         ptr::null_mut()
     )
 }
 
-fn inner_mesalink_pem_read_bio_privatekey(
-    bio_ptr: *mut MESALINK_BIO<'_>,
-    pkey_pp: *mut *mut MESALINK_EVP_PKEY,
-) -> MesalinkInnerResult<*mut MESALINK_EVP_PKEY> {
+fn inner_tabby_pem_read_bio_privatekey(
+    bio_ptr: *mut TABBY_BIO<'_>,
+    pkey_pp: *mut *mut TABBY_EVP_PKEY,
+) -> InnerResult<*mut TABBY_EVP_PKEY> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let mut buf_reader = io::BufReader::with_capacity(1, bio);
     let key = get_either_rsa_or_ecdsa_private_key(&mut buf_reader)
-        .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
-    let pkey = MESALINK_EVP_PKEY::new(key);
-    let pkey_ptr = Box::into_raw(Box::new(pkey)) as *mut MESALINK_EVP_PKEY;
+        .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+    let pkey = TABBY_EVP_PKEY::new(key);
+    let pkey_ptr = Box::into_raw(Box::new(pkey)) as *mut TABBY_EVP_PKEY;
 
     if !pkey_pp.is_null() {
         unsafe {
@@ -71,24 +66,24 @@ fn inner_mesalink_pem_read_bio_privatekey(
 /// keys in the file, only the first one is read.
 ///
 /// ```c
-/// #include <mesalink/openssl/pem.h>
+/// #include <tabbyssl/openssl/pem.h>
 ///
 /// EVP_PKEY *PEM_read_PrivateKey(FILE *fp, EVP_PKEY **x,
 ///                                     pem_password_cb *cb, void *u);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_PEM_read_PrivateKey(
+pub extern "C" fn tabby_PEM_read_PrivateKey(
     file_ptr: *mut libc::FILE,
-    pkey_pp: *mut *mut MESALINK_EVP_PKEY,
+    pkey_pp: *mut *mut TABBY_EVP_PKEY,
     _cb: *mut c_void,
     _u: *mut c_void,
-) -> *mut MESALINK_EVP_PKEY {
-    let bio_ptr = bio::mesalink_BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
+) -> *mut TABBY_EVP_PKEY {
+    let bio_ptr = bio::tabby_BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
     let ret = check_inner_result!(
-        inner_mesalink_pem_read_bio_privatekey(bio_ptr, pkey_pp),
+        inner_tabby_pem_read_bio_privatekey(bio_ptr, pkey_pp),
         ptr::null_mut()
     );
-    bio::mesalink_BIO_free(bio_ptr);
+    bio::tabby_BIO_free(bio_ptr);
     ret
 }
 
@@ -96,33 +91,33 @@ pub extern "C" fn mesalink_PEM_read_PrivateKey(
 /// multiple certificates in the bio, only the first one is read.
 ///
 /// ```c
-/// #include <mesalink/openssl/pem.h>
+/// #include <tabbyssl/openssl/pem.h>
 ///
 /// X509 *PEM_read_bio_X509(BIO *bio, X509 **x, pem_password_cb *cb, void *u);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_PEM_read_bio_X509(
-    bio_ptr: *mut MESALINK_BIO<'_>,
-    x509_pp: *mut *mut MESALINK_X509,
+pub extern "C" fn tabby_PEM_read_bio_X509(
+    bio_ptr: *mut TABBY_BIO<'_>,
+    x509_pp: *mut *mut TABBY_X509,
     _cb: *mut c_void,
     _u: *mut c_void,
-) -> *mut MESALINK_X509 {
+) -> *mut TABBY_X509 {
     check_inner_result!(
-        inner_mesalink_pem_read_bio_x509(bio_ptr, x509_pp),
+        inner_tabby_pem_read_bio_x509(bio_ptr, x509_pp),
         ptr::null_mut()
     )
 }
 
-fn inner_mesalink_pem_read_bio_x509(
-    bio_ptr: *mut MESALINK_BIO<'_>,
-    x509_pp: *mut *mut MESALINK_X509,
-) -> MesalinkInnerResult<*mut MESALINK_X509> {
+fn inner_tabby_pem_read_bio_x509(
+    bio_ptr: *mut TABBY_BIO<'_>,
+    x509_pp: *mut *mut TABBY_X509,
+) -> InnerResult<*mut TABBY_X509> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let mut buf_reader = io::BufReader::with_capacity(1, bio);
-    let cert = get_certificate(&mut buf_reader)
-        .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
-    let x509 = MESALINK_X509::new(cert);
-    let x509_ptr = Box::into_raw(Box::new(x509)) as *mut MESALINK_X509;
+    let cert =
+        get_certificate(&mut buf_reader).map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+    let x509 = TABBY_X509::new(cert);
+    let x509_ptr = Box::into_raw(Box::new(x509)) as *mut TABBY_X509;
     if !x509_pp.is_null() {
         unsafe {
             let p = &mut *x509_pp;
@@ -135,23 +130,23 @@ fn inner_mesalink_pem_read_bio_x509(
 /// `PEM_read_X509` reads a X509 certificate from *file*.
 ///
 /// ```c
-/// #include <mesalink/openssl/pem.h>
+/// #include <tabbyssl/openssl/pem.h>
 ///
 /// X509 *PEM_read_X509(FILE *fp, X509 **x, pem_password_cb *cb, void *u);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_PEM_read_X509(
+pub extern "C" fn tabby_PEM_read_X509(
     file_ptr: *mut libc::FILE,
-    x509_pp: *mut *mut MESALINK_X509,
+    x509_pp: *mut *mut TABBY_X509,
     _cb: *mut c_void,
     _u: *mut c_void,
-) -> *mut MESALINK_X509 {
-    let bio_ptr = bio::mesalink_BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
+) -> *mut TABBY_X509 {
+    let bio_ptr = bio::tabby_BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
     let ret = check_inner_result!(
-        inner_mesalink_pem_read_bio_x509(bio_ptr, x509_pp),
+        inner_tabby_pem_read_bio_x509(bio_ptr, x509_pp),
         ptr::null_mut()
     );
-    bio::mesalink_BIO_free(bio_ptr);
+    bio::tabby_BIO_free(bio_ptr);
     ret
 }
 
@@ -243,20 +238,20 @@ mod test {
 
     #[test]
     fn pem_read_bio_private_key() {
-        let bio_ptr = bio::mesalink_BIO_new_file(
+        let bio_ptr = bio::tabby_BIO_new_file(
             b"tests/end.key\0".as_ptr() as *const c_char,
             b"r\0".as_ptr() as *const c_char,
         );
         assert_ne!(bio_ptr, ptr::null_mut());
-        let pkey_ptr = mesalink_PEM_read_bio_PrivateKey(
+        let pkey_ptr = tabby_PEM_read_bio_PrivateKey(
             bio_ptr,
             ptr::null_mut(),
             ptr::null_mut(),
             ptr::null_mut(),
         );
         assert_ne!(pkey_ptr, ptr::null_mut());
-        evp::mesalink_EVP_PKEY_free(pkey_ptr);
-        bio::mesalink_BIO_free(bio_ptr);
+        evp::tabby_EVP_PKEY_free(pkey_ptr);
+        bio::tabby_BIO_free(bio_ptr);
     }
 
     #[test]
@@ -265,23 +260,23 @@ mod test {
         let fp = unsafe { file.open_file_stream_r() };
         assert_ne!(fp, ptr::null_mut());
         let pkey_ptr =
-            mesalink_PEM_read_PrivateKey(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
+            tabby_PEM_read_PrivateKey(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
         assert_ne!(pkey_ptr, ptr::null_mut());
-        evp::mesalink_EVP_PKEY_free(pkey_ptr);
+        evp::tabby_EVP_PKEY_free(pkey_ptr);
     }
 
     #[test]
     fn pem_read_bio_x509() {
-        let bio_ptr = bio::mesalink_BIO_new_file(
+        let bio_ptr = bio::tabby_BIO_new_file(
             b"tests/end.fullchain\0".as_ptr() as *const c_char,
             b"r\0".as_ptr() as *const c_char,
         );
         assert_ne!(bio_ptr, ptr::null_mut());
         let x509_ptr =
-            mesalink_PEM_read_bio_X509(bio_ptr, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
+            tabby_PEM_read_bio_X509(bio_ptr, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
         assert_ne!(x509_ptr, ptr::null_mut());
-        x509::mesalink_X509_free(x509_ptr);
-        bio::mesalink_BIO_free(bio_ptr);
+        x509::tabby_X509_free(x509_ptr);
+        bio::tabby_BIO_free(bio_ptr);
     }
 
     #[test]
@@ -289,9 +284,8 @@ mod test {
         let file = fs::File::open("tests/end.fullchain").unwrap(); // Read-only, "r"
         let fp = unsafe { file.open_file_stream_r() };
         assert_ne!(fp, ptr::null_mut());
-        let x509_ptr =
-            mesalink_PEM_read_X509(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
+        let x509_ptr = tabby_PEM_read_X509(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
         assert_ne!(x509_ptr, ptr::null_mut());
-        x509::mesalink_X509_free(x509_ptr);
+        x509::tabby_X509_free(x509_ptr);
     }
 }

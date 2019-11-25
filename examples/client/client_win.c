@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2019, Yiming Jing
+ * Copyright (c) 2017-2019, The MesaLink Authors
+ * All rights reserved.
+ *
+ * This work is licensed under the terms of the BSD 3-Clause License.
+ * For a copy, see the LICENSE file.
+ *
+ */
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -7,10 +17,10 @@
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 #include <stdio.h>
-#include <mesalink/openssl/ssl.h>
+#include <tabbyssl/openssl/ssl.h>
 
 #pragma comment(lib, "Ws2_32.lib")
-#pragma comment(lib, "mesalink.lib")
+#pragma comment(lib, "tabbyssl.lib")
 
 #define DEFAULT_BUFLEN 8192
 #define DEFAULT_PORT "443"
@@ -38,7 +48,7 @@ int __cdecl main(int argc, char **argv)
     return 1;
   }
 
-  // Initialize MesaLink
+  // Initialize
   ctx = SSL_CTX_new(SSLv23_client_method());
   ssl = SSL_new(ctx);
   char hostname_buf[256] = { 0 };

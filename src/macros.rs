@@ -1,11 +1,6 @@
 /*
- *   __  __                 _     _       _
- *  |  \/  | ___  ___  __ _| |   (_)_ __ | | __
- *  | |\/| |/ _ \/ __|/ _` | |   | | '_ \| |/ /
- *  | |  | |  __/\__ \ (_| | |___| | | | |   <
- *  |_|  |_|\___||___/\__,_|_____|_|_| |_|_|\_\
- *
- * Copyright (c) 2017-2019, The MesaLink Authors.
+ * Copyright (c) 2019, Yiming Jing
+ * Copyright (c) 2017-2019, The MesaLink Authors
  * All rights reserved.
  *
  * This work is licensed under the terms of the BSD 3-Clause License.
@@ -33,8 +28,7 @@ macro_rules! call_site {
 #[macro_export]
 macro_rules! error {
     ($code:expr) => {{
-        use crate::libssl::err::MesalinkError;
-        MesalinkError::new($code, call_site!())
+        crate::libssl::err::Error::new($code, call_site!())
     }};
 }
 // A utility macro that wraps each inner API implementation and checks its
@@ -45,10 +39,10 @@ macro_rules! error {
 #[macro_export]
 macro_rules! check_inner_result {
     ($inner:expr, $err_ret:expr) => {{
-        use crate::libssl::err::{ErrorQueue, MesalinkBuiltinError};
+        use crate::libssl::err::{ErrorQueue, OpensslError};
         use std::panic;
         match panic::catch_unwind(panic::AssertUnwindSafe(|| $inner))
-            .unwrap_or_else(|_| Err(error!(MesalinkBuiltinError::Panic.into())))
+            .unwrap_or_else(|_| Err(error!(OpensslError::Panic.into())))
         {
             Ok(r) => r,
             Err(e) => {

@@ -1,11 +1,6 @@
 /*
- *   __  __                 _     _       _
- *  |  \/  | ___  ___  __ _| |   (_)_ __ | | __
- *  | |\/| |/ _ \/ __|/ _` | |   | | '_ \| |/ /
- *  | |  | |  __/\__ \ (_| | |___| | | | |   <
- *  |_|  |_|\___||___/\__,_|_____|_|_| |_|_|\_\
- *
- * Copyright (c) 2017-2018, The MesaLink Authors.
+ * Copyright (c) 2019, Yiming Jing
+ * Copyright (c) 2017-2019, The MesaLink Authors
  * All rights reserved.
  *
  * This work is licensed under the terms of the BSD 3-Clause License.
@@ -40,19 +35,19 @@
 //! follows.
 //!
 //! ```c
-//!   MESALINK_ERROR_NONE = 0,
-//!   MESALINK_ERROR_ZERO_RETURN = 1,
-//!   MESALINK_ERROR_WANT_READ = 2,
-//!   MESALINK_ERROR_WANT_WRITE = 3,
-//!   MESALINK_ERROR_WANT_CONNECT = 7,
-//!   MESALINK_ERROR_WANT_ACCEPT = 8,
-//!   MESALINK_ERROR_SYSCALL = 5,
-//!   MESALINK_ERROR_SSL = 0x55,
-//!   MESALINK_ERROR_NULL_POINTER = 0xe0,
-//!   MESALINK_ERROR_MALFORMED_OBJECT = 0xe1,
-//!   MESALINK_ERROR_BAD_FUNC_ARG = 0xe2,
-//!   MESALINK_ERROR_PANIC = 0xe3,
-//!   MESALINK_ERROR_LOCK = 0xe4,
+//!   TABBY_ERROR_NONE = 0,
+//!   TABBY_ERROR_ZERO_RETURN = 1,
+//!   TABBY_ERROR_WANT_READ = 2,
+//!   TABBY_ERROR_WANT_WRITE = 3,
+//!   TABBY_ERROR_WANT_CONNECT = 7,
+//!   TABBY_ERROR_WANT_ACCEPT = 8,
+//!   TABBY_ERROR_SYSCALL = 5,
+//!   TABBY_ERROR_SSL = 0x55,
+//!   TABBY_ERROR_NULL_POINTER = 0xe0,
+//!   TABBY_ERROR_MALFORMED_OBJECT = 0xe1,
+//!   TABBY_ERROR_BAD_FUNC_ARG = 0xe2,
+//!   TABBY_ERROR_PANIC = 0xe3,
+//!   TABBY_ERROR_LOCK = 0xe4,
 //!   IO_ERROR_NOT_FOUND = 0x0200_0001,
 //!   IO_ERROR_PERMISSION_DENIED = 0x0200_0002,
 //!   IO_ERROR_CONNECTION_REFUSED = 0x0200_0003,
@@ -153,14 +148,14 @@ use webpki;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 thread_local! {
-    static ERROR_QUEUE: RefCell<VecDeque<MesalinkError>> = RefCell::new(VecDeque::new());
+    static ERROR_QUEUE: RefCell<VecDeque<Error>> = RefCell::new(VecDeque::new());
 }
 
 #[doc(hidden)]
 #[repr(C)]
 #[derive(PartialEq, Clone, Debug)]
 #[allow(dead_code)]
-pub(crate) enum MesalinkBuiltinError {
+pub(crate) enum OpensslError {
     None,
     ZeroReturn,
     WantRead,
@@ -177,77 +172,77 @@ pub(crate) enum MesalinkBuiltinError {
 }
 
 #[doc(hidden)]
-impl fmt::Display for MesalinkBuiltinError {
+impl fmt::Display for OpensslError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "MesalinkBuiltinError: {:?}", self)
+        write!(f, "OpensslError: {:?}", self)
     }
 }
 
 #[doc(hidden)]
-impl error::Error for MesalinkBuiltinError {
+impl error::Error for OpensslError {
     fn description(&self) -> &str {
         match *self {
-            MesalinkBuiltinError::None => "SSL_ERROR_NONE",
-            MesalinkBuiltinError::ZeroReturn => "SSL_ERROR_ZERO_RETURN",
-            MesalinkBuiltinError::WantRead => "SSL_ERROR_WANT_READ",
-            MesalinkBuiltinError::WantWrite => "SSL_ERROR_WANT_WRITE",
-            MesalinkBuiltinError::WantConnect => "SSL_ERROR_WANT_CONNECT",
-            MesalinkBuiltinError::WantAccept => "SSL_ERROR_WANT_ACCEPT",
-            MesalinkBuiltinError::Syscall => "SSL_ERROR_SYSCALL",
-            MesalinkBuiltinError::Ssl => "SSL_ERROR_SSL",
-            MesalinkBuiltinError::NullPointer => "MESALINK_ERROR_NULL_POINTER",
-            MesalinkBuiltinError::MalformedObject => "MESALINK_ERROR_MALFORMED_OBJECT",
-            MesalinkBuiltinError::BadFuncArg => "MESALINK_ERROR_BAD_FUNCTION_ARGUMENT",
-            MesalinkBuiltinError::Panic => "MESALINK_ERROR_PANIC_AT_FFI",
-            MesalinkBuiltinError::Lock => "MESALINK_ERROR_LOCK_FAILED",
+            OpensslError::None => "SSL_ERROR_NONE",
+            OpensslError::ZeroReturn => "SSL_ERROR_ZERO_RETURN",
+            OpensslError::WantRead => "SSL_ERROR_WANT_READ",
+            OpensslError::WantWrite => "SSL_ERROR_WANT_WRITE",
+            OpensslError::WantConnect => "SSL_ERROR_WANT_CONNECT",
+            OpensslError::WantAccept => "SSL_ERROR_WANT_ACCEPT",
+            OpensslError::Syscall => "SSL_ERROR_SYSCALL",
+            OpensslError::Ssl => "SSL_ERROR_SSL",
+            OpensslError::NullPointer => "TABBY_ERROR_NULL_POINTER",
+            OpensslError::MalformedObject => "TABBY_ERROR_MALFORMED_OBJECT",
+            OpensslError::BadFuncArg => "TABBY_ERROR_BAD_FUNCTION_ARGUMENT",
+            OpensslError::Panic => "TABBY_ERROR_PANIC_AT_FFI",
+            OpensslError::Lock => "TABBY_ERROR_LOCK_FAILED",
         }
     }
 }
 
 #[cfg_attr(feature = "error_strings", derive(Debug))]
 #[doc(hidden)]
-pub(crate) enum MesalinkErrorType {
+pub(crate) enum ErrorKind {
     Io(io::Error),
     Tls(rustls::TLSError),
-    Builtin(MesalinkBuiltinError),
+    Builtin(OpensslError),
 }
 
 #[doc(hidden)]
-impl From<io::Error> for MesalinkErrorType {
-    fn from(err: io::Error) -> MesalinkErrorType {
-        MesalinkErrorType::Io(err)
+impl From<io::Error> for ErrorKind {
+    fn from(err: io::Error) -> ErrorKind {
+        ErrorKind::Io(err)
     }
 }
 
 #[doc(hidden)]
-impl From<rustls::TLSError> for MesalinkErrorType {
-    fn from(err: rustls::TLSError) -> MesalinkErrorType {
-        MesalinkErrorType::Tls(err)
+impl From<rustls::TLSError> for ErrorKind {
+    fn from(err: rustls::TLSError) -> ErrorKind {
+        ErrorKind::Tls(err)
     }
 }
 
 #[doc(hidden)]
-impl From<MesalinkBuiltinError> for MesalinkErrorType {
-    fn from(err: MesalinkBuiltinError) -> MesalinkErrorType {
-        MesalinkErrorType::Builtin(err)
+impl From<OpensslError> for ErrorKind {
+    fn from(err: OpensslError) -> ErrorKind {
+        ErrorKind::Builtin(err)
     }
 }
 
 #[cfg_attr(feature = "error_strings", derive(Debug))]
 #[doc(hidden)]
-pub(crate) struct MesalinkError {
-    pub error: MesalinkErrorType,
+pub(crate) struct Error {
+    pub error: ErrorKind,
     call_site: &'static str,
 }
 
-impl MesalinkError {
-    pub fn new(error: MesalinkErrorType, call_site: &'static str) -> MesalinkError {
-        MesalinkError { error, call_site }
+impl Error {
+    pub fn new(error: ErrorKind, call_site: &'static str) -> Error {
+        Error { error, call_site }
     }
 }
 
 #[doc(hidden)]
-pub(crate) type MesalinkInnerResult<T> = Result<T, MesalinkError>;
+pub(crate) type InnerResult<T> = Result<T, Error>;
 
 #[doc(hidden)]
 #[repr(C)]
@@ -255,19 +250,19 @@ pub(crate) type MesalinkInnerResult<T> = Result<T, MesalinkError>;
 #[cfg_attr(feature = "error_strings", derive(EnumToU8, Debug))]
 pub enum ErrorCode {
     // OpenSSL error codes
-    MesalinkErrorNone = 0,
-    MesalinkErrorZeroReturn = 1,
-    MesalinkErrorWantRead = 2,
-    MesalinkErrorWantWrite = 3,
-    MesalinkErrorWantConnect = 7,
-    MesalinkErrorWantAccept = 8,
-    MesalinkErrorSyscall = 5,
-    MesalinkErrorSsl = 0x55,
-    MesalinkNullPointer = 0xe0,
-    MesalinkErrorMalformedObject = 0xe1,
-    MesalinkErrorBadFuncArg = 0xe2,
-    MesalinkErrorPanic = 0xe3,
-    MesalinkErrorLock = 0xe4,
+    OpensslErrorNone = 0,
+    OpensslErrorZeroReturn = 1,
+    OpensslErrorWantRead = 2,
+    OpensslErrorWantWrite = 3,
+    OpensslErrorWantConnect = 7,
+    OpensslErrorWantAccept = 8,
+    OpensslErrorSyscall = 5,
+    OpensslErrorSsl = 0x55,
+    OpensslNullPointer = 0xe0,
+    OpensslErrorMalformedObject = 0xe1,
+    OpensslErrorBadFuncArg = 0xe2,
+    OpensslErrorPanic = 0xe3,
+    OpensslErrorLock = 0xe4,
     // Rust IO ErrorKind codes
     IoErrorNotFound = 0x0200_0001,
     IoErrorPermissionDenied = 0x0200_0002,
@@ -359,6 +354,7 @@ pub enum ErrorCode {
     TLSErrorInvalidDNSName = 0x0300_0e00,
     TLSErrorHandshakeNotComplete = 0x0300_0f00,
     TLSErrorPeerSentOversizedRecord = 0x0300_1000,
+    TLSErrorNoApplicationProtocol = 0x0300_1100,
     UndefinedError = 0x0eee_eeee,
 }
 
@@ -378,7 +374,7 @@ impl ErrorCode {
 #[doc(hidden)]
 impl Default for ErrorCode {
     fn default() -> ErrorCode {
-        ErrorCode::MesalinkErrorNone
+        ErrorCode::OpensslErrorNone
     }
 }
 
@@ -386,19 +382,19 @@ impl Default for ErrorCode {
 impl From<u32> for ErrorCode {
     fn from(e: u32) -> ErrorCode {
         match e {
-            0 => ErrorCode::MesalinkErrorNone,
-            1 => ErrorCode::MesalinkErrorZeroReturn,
-            2 => ErrorCode::MesalinkErrorWantRead,
-            3 => ErrorCode::MesalinkErrorWantWrite,
-            7 => ErrorCode::MesalinkErrorWantConnect,
-            8 => ErrorCode::MesalinkErrorWantAccept,
-            5 => ErrorCode::MesalinkErrorSyscall,
-            0x55 => ErrorCode::MesalinkErrorSsl,
-            0xe0 => ErrorCode::MesalinkNullPointer,
-            0xe1 => ErrorCode::MesalinkErrorMalformedObject,
-            0xe2 => ErrorCode::MesalinkErrorBadFuncArg,
-            0xe3 => ErrorCode::MesalinkErrorPanic,
-            0xe4 => ErrorCode::MesalinkErrorLock,
+            0 => ErrorCode::OpensslErrorNone,
+            1 => ErrorCode::OpensslErrorZeroReturn,
+            2 => ErrorCode::OpensslErrorWantRead,
+            3 => ErrorCode::OpensslErrorWantWrite,
+            7 => ErrorCode::OpensslErrorWantConnect,
+            8 => ErrorCode::OpensslErrorWantAccept,
+            5 => ErrorCode::OpensslErrorSyscall,
+            0x55 => ErrorCode::OpensslErrorSsl,
+            0xe0 => ErrorCode::OpensslNullPointer,
+            0xe1 => ErrorCode::OpensslErrorMalformedObject,
+            0xe2 => ErrorCode::OpensslErrorBadFuncArg,
+            0xe3 => ErrorCode::OpensslErrorPanic,
+            0xe4 => ErrorCode::OpensslErrorLock,
             0x0200_0001 => ErrorCode::IoErrorNotFound,
             0x0200_0002 => ErrorCode::IoErrorPermissionDenied,
             0x0200_0003 => ErrorCode::IoErrorConnectionRefused,
@@ -488,6 +484,7 @@ impl From<u32> for ErrorCode {
             0x0300_0e00 => ErrorCode::TLSErrorInvalidDNSName,
             0x0300_0f00 => ErrorCode::TLSErrorHandshakeNotComplete,
             0x0300_1000 => ErrorCode::TLSErrorPeerSentOversizedRecord,
+            0x0300_1100 => ErrorCode::TLSErrorNoApplicationProtocol,
             _ => ErrorCode::UndefinedError,
         }
     }
@@ -503,27 +500,27 @@ impl From<u64> for ErrorCode {
 #[doc(hidden)]
 #[allow(unused_variables)]
 #[rustfmt::skip]
-impl<'a> From<&'a MesalinkError> for ErrorCode {
-    fn from(e: &'a MesalinkError) -> ErrorCode {
+impl<'a> From<&'a Error> for ErrorCode {
+    fn from(e: &'a Error) -> ErrorCode {
         use rustls::internal::msgs::enums::{AlertDescription, ContentType};
         use rustls::TLSError;
         match e.error {
-            MesalinkErrorType::Builtin(ref e) => match *e {
-                MesalinkBuiltinError::None => ErrorCode::MesalinkErrorNone,
-                MesalinkBuiltinError::ZeroReturn => ErrorCode::MesalinkErrorZeroReturn,
-                MesalinkBuiltinError::WantRead => ErrorCode::MesalinkErrorWantRead,
-                MesalinkBuiltinError::WantWrite => ErrorCode::MesalinkErrorWantWrite,
-                MesalinkBuiltinError::WantConnect => ErrorCode::MesalinkErrorWantConnect,
-                MesalinkBuiltinError::WantAccept => ErrorCode::MesalinkErrorWantAccept,
-                MesalinkBuiltinError::Syscall => ErrorCode::MesalinkErrorSyscall,
-                MesalinkBuiltinError::Ssl => ErrorCode::MesalinkErrorSsl,
-                MesalinkBuiltinError::NullPointer => ErrorCode::MesalinkNullPointer,
-                MesalinkBuiltinError::MalformedObject => ErrorCode::MesalinkErrorMalformedObject,
-                MesalinkBuiltinError::BadFuncArg => ErrorCode::MesalinkErrorBadFuncArg,
-                MesalinkBuiltinError::Panic => ErrorCode::MesalinkErrorPanic,
-                MesalinkBuiltinError::Lock => ErrorCode::MesalinkErrorLock,
+            ErrorKind::Builtin(ref e) => match *e {
+                OpensslError::None => ErrorCode::OpensslErrorNone,
+                OpensslError::ZeroReturn => ErrorCode::OpensslErrorZeroReturn,
+                OpensslError::WantRead => ErrorCode::OpensslErrorWantRead,
+                OpensslError::WantWrite => ErrorCode::OpensslErrorWantWrite,
+                OpensslError::WantConnect => ErrorCode::OpensslErrorWantConnect,
+                OpensslError::WantAccept => ErrorCode::OpensslErrorWantAccept,
+                OpensslError::Syscall => ErrorCode::OpensslErrorSyscall,
+                OpensslError::Ssl => ErrorCode::OpensslErrorSsl,
+                OpensslError::NullPointer => ErrorCode::OpensslNullPointer,
+                OpensslError::MalformedObject => ErrorCode::OpensslErrorMalformedObject,
+                OpensslError::BadFuncArg => ErrorCode::OpensslErrorBadFuncArg,
+                OpensslError::Panic => ErrorCode::OpensslErrorPanic,
+                OpensslError::Lock => ErrorCode::OpensslErrorLock,
             },
-            MesalinkErrorType::Io(ref e) => match e.kind() {
+            ErrorKind::Io(ref e) => match e.kind() {
                 io::ErrorKind::NotFound => ErrorCode::IoErrorNotFound,
                 io::ErrorKind::PermissionDenied => ErrorCode::IoErrorPermissionDenied,
                 io::ErrorKind::ConnectionRefused => ErrorCode::IoErrorConnectionRefused,
@@ -544,7 +541,7 @@ impl<'a> From<&'a MesalinkError> for ErrorCode {
                 io::ErrorKind::UnexpectedEof => ErrorCode::IoErrorUnexpectedEof,
                 _ => ErrorCode::UndefinedError,
             },
-            MesalinkErrorType::Tls(ref e) => match *e {
+            ErrorKind::Tls(ref e) => match *e {
                 TLSError::InappropriateMessage {
                     ref expect_types,
                     ref got_type,
@@ -628,6 +625,7 @@ impl<'a> From<&'a MesalinkError> for ErrorCode {
                 TLSError::InvalidDNSName(_) => ErrorCode::TLSErrorInvalidDNSName,
                 TLSError::HandshakeNotComplete => ErrorCode::TLSErrorHandshakeNotComplete,
                 TLSError::PeerSentOversizedRecord => ErrorCode::TLSErrorPeerSentOversizedRecord,
+                TLSError::NoApplicationProtocol => ErrorCode::TLSErrorNoApplicationProtocol,
             },
         }
     }
@@ -636,24 +634,24 @@ impl<'a> From<&'a MesalinkError> for ErrorCode {
 /// `ERR_load_error_strings` - compatibility only
 ///
 /// ```c
-/// #include <mesalink/openssl/err.h>
+/// #include <tabbyssl/openssl/err.h>
 ///
 /// void SSL_load_error_strings(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_ERR_load_error_strings() {
+pub extern "C" fn tabby_ERR_load_error_strings() {
     // compatibility only
 }
 
 /// `ERR_free_error_strings` - compatibility only
 ///
 /// ```c
-/// #include <mesalink/openssl/err.h>
+/// #include <tabbyssl/openssl/err.h>
 ///
 /// void SSL_free_error_strings(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_ERR_free_error_strings() {
+pub extern "C" fn tabby_ERR_free_error_strings() {
     // compatibility only
 }
 
@@ -662,7 +660,7 @@ pub extern "C" fn mesalink_ERR_free_error_strings() {
 /// not thread-safe and does no checks on the size of the buffer.
 ///
 /// ```c
-/// #include <mesalink/openssl/err.h>
+/// #include <tabbyssl/openssl/err.h>
 ///
 /// void ERR_error_string_n(unsigned long e, char *buf, size_t len);
 ///
@@ -672,7 +670,7 @@ pub extern "C" fn mesalink_ERR_free_error_strings() {
 /// This API is Rust-unsafe because it dereferences a pointer provided by users
 /// Use with caution!
 #[no_mangle]
-pub unsafe extern "C" fn mesalink_ERR_error_string_n(
+pub unsafe extern "C" fn tabby_ERR_error_string_n(
     error_code: c_ulong,
     buf_ptr: *mut c_char,
     buf_len: size_t,
@@ -698,12 +696,12 @@ pub unsafe extern "C" fn mesalink_ERR_error_string_n(
 /// the error code e. This API does not allocate additional memory.
 ///
 /// ```c
-/// #include <mesalink/openssl/err.h>
+/// #include <tabbyssl/openssl/err.h>
 ///
 /// const char *ERR_reason_error_string(unsigned long e);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_ERR_reason_error_string(e: c_ulong) -> *const c_char {
+pub extern "C" fn tabby_ERR_reason_error_string(e: c_ulong) -> *const c_char {
     let error_code: ErrorCode = ErrorCode::from(e);
     error_code.as_u8_slice().as_ptr() as *const c_char
 }
@@ -712,9 +710,9 @@ pub extern "C" fn mesalink_ERR_reason_error_string(e: c_ulong) -> *const c_char 
 pub(crate) struct ErrorQueue {}
 
 impl ErrorQueue {
-    pub fn push_error(e: MesalinkError) {
+    pub fn push_error(e: Error) {
         ERROR_QUEUE.with(|q| {
-            if ErrorCode::from(&e) != ErrorCode::MesalinkErrorNone {
+            if ErrorCode::from(&e) != ErrorCode::OpensslErrorNone {
                 q.borrow_mut().push_back(e);
             }
         });
@@ -726,12 +724,12 @@ impl ErrorQueue {
 /// there are no more error codes to return.
 ///
 /// ```c
-/// #include <mesalink/openssl/err.h>
+/// #include <tabbyssl/openssl/err.h>
 ///
 /// unsigned long ERR_get_error(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_ERR_get_error() -> c_ulong {
+pub extern "C" fn tabby_ERR_get_error() -> c_ulong {
     ERROR_QUEUE.with(|q| match q.borrow_mut().pop_front() {
         Some(e) => ErrorCode::from(&e) as c_ulong,
         None => 0,
@@ -742,12 +740,12 @@ pub extern "C" fn mesalink_ERR_get_error() -> c_ulong {
 /// queue without modifying it.
 ///
 /// ```c
-/// #include <mesalink/openssl/err.h>
+/// #include <tabbyssl/openssl/err.h>
 ///
 /// unsigned long ERR_peek_last_error(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_ERR_peek_last_error() -> c_ulong {
+pub extern "C" fn tabby_ERR_peek_last_error() -> c_ulong {
     ERROR_QUEUE.with(|q| match q.borrow().front() {
         Some(e) => ErrorCode::from(e) as c_ulong,
         None => 0,
@@ -757,12 +755,12 @@ pub extern "C" fn mesalink_ERR_peek_last_error() -> c_ulong {
 /// `ERR_clear_error` - empty the current thread's error queue.
 ///
 /// ```c
-/// #include <mesalink/openssl/err.h>
+/// #include <tabbyssl/openssl/err.h>
 ///
 /// void ERR_clear_error(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_ERR_clear_error() {
+pub extern "C" fn tabby_ERR_clear_error() {
     ERROR_QUEUE.with(|q| {
         q.borrow_mut().clear();
     });
@@ -773,7 +771,7 @@ pub extern "C" fn mesalink_ERR_clear_error() {
 /// error queue.
 ///
 /// ```c
-/// #include <mesalink/openssl/err.h>
+/// #include <tabbyssl/openssl/err.h>
 ///
 /// void ERR_print_errors_fp(FILE *fp);
 /// ```
@@ -782,7 +780,7 @@ pub extern "C" fn mesalink_ERR_clear_error() {
 /// This API is Rust-unsafe because it dereferences a pointer provided by users
 /// Use with caution!
 #[no_mangle]
-pub unsafe extern "C" fn mesalink_ERR_print_errors_fp(fp: *mut libc::FILE) {
+pub unsafe extern "C" fn tabby_ERR_print_errors_fp(fp: *mut libc::FILE) {
     use crate::libcrypto::bio::FromFileStream;
     use std::io::Write;
     use std::{fs, str};
@@ -799,7 +797,7 @@ pub unsafe extern "C" fn mesalink_ERR_print_errors_fp(fp: *mut libc::FILE) {
         for e in queue.drain(0..) {
             let error_code = ErrorCode::from(&e);
             let error_string = format!(
-                "error:[0x{:X}]:[mesalink]:[{}]:[{}]\n",
+                "error:[0x{:X}]:[tabbyssl]:[{}]:[{}]\n",
                 error_code as c_ulong,
                 e.call_site,
                 str::from_utf8(error_code.as_u8_slice()).unwrap(),
@@ -817,62 +815,61 @@ mod tests {
 
     macro_rules! error {
         ($code:expr) => {{
-            use crate::libssl::err::MesalinkError;
-            MesalinkError::new($code, call_site!())
+            crate::libssl::err::Error::new($code, call_site!())
         }};
     }
 
     #[test]
     fn empty() {
-        assert_eq!(0, mesalink_ERR_get_error());
-        mesalink_ERR_clear_error();
+        assert_eq!(0, tabby_ERR_get_error());
+        tabby_ERR_clear_error();
     }
 
     #[test]
     fn push() {
-        let error_code = ErrorCode::MesalinkNullPointer;
-        ErrorQueue::push_error(error!(MesalinkBuiltinError::NullPointer.into()));
-        assert_eq!(error_code, ErrorCode::from(mesalink_ERR_get_error()));
-        mesalink_ERR_clear_error();
+        let error_code = ErrorCode::OpensslNullPointer;
+        ErrorQueue::push_error(error!(OpensslError::NullPointer.into()));
+        assert_eq!(error_code, ErrorCode::from(tabby_ERR_get_error()));
+        tabby_ERR_clear_error();
     }
 
     #[test]
     fn clear() {
-        ErrorQueue::push_error(error!(MesalinkBuiltinError::NullPointer.into()));
-        mesalink_ERR_clear_error();
-        assert_eq!(0, mesalink_ERR_get_error());
-        mesalink_ERR_clear_error();
+        ErrorQueue::push_error(error!(OpensslError::NullPointer.into()));
+        tabby_ERR_clear_error();
+        assert_eq!(0, tabby_ERR_get_error());
+        tabby_ERR_clear_error();
     }
 
     #[test]
     fn get_should_remove_error() {
-        ErrorQueue::push_error(error!(MesalinkBuiltinError::NullPointer.into()));
-        let _ = mesalink_ERR_get_error();
-        assert_eq!(0, mesalink_ERR_get_error());
-        mesalink_ERR_clear_error();
+        ErrorQueue::push_error(error!(OpensslError::NullPointer.into()));
+        let _ = tabby_ERR_get_error();
+        assert_eq!(0, tabby_ERR_get_error());
+        tabby_ERR_clear_error();
     }
 
     #[test]
     fn peek_should_not_remove_error() {
-        let error_code = ErrorCode::MesalinkNullPointer;
-        ErrorQueue::push_error(error!(MesalinkBuiltinError::NullPointer.into()));
-        let _ = mesalink_ERR_peek_last_error();
-        assert_eq!(error_code, ErrorCode::from(mesalink_ERR_get_error()));
-        mesalink_ERR_clear_error();
+        let error_code = ErrorCode::OpensslNullPointer;
+        ErrorQueue::push_error(error!(OpensslError::NullPointer.into()));
+        let _ = tabby_ERR_peek_last_error();
+        assert_eq!(error_code, ErrorCode::from(tabby_ERR_get_error()));
+        tabby_ERR_clear_error();
     }
 
     #[test]
     fn error_queue_is_thread_local() {
         let thread = thread::spawn(|| {
-            ErrorQueue::push_error(error!(MesalinkBuiltinError::NullPointer.into()));
-            ErrorCode::from(mesalink_ERR_get_error())
+            ErrorQueue::push_error(error!(OpensslError::NullPointer.into()));
+            ErrorCode::from(tabby_ERR_get_error())
         });
-        ErrorQueue::push_error(error!(MesalinkBuiltinError::MalformedObject.into()));
+        ErrorQueue::push_error(error!(OpensslError::MalformedObject.into()));
 
-        let main_thread_error_code = ErrorCode::from(mesalink_ERR_get_error());
+        let main_thread_error_code = ErrorCode::from(tabby_ERR_get_error());
         let sub_thread_error_code = thread.join().unwrap();
         assert_ne!(main_thread_error_code, sub_thread_error_code);
-        mesalink_ERR_clear_error();
+        tabby_ERR_clear_error();
     }
 
     #[test]
@@ -885,25 +882,25 @@ mod tests {
             ErrorCode::from(std::i32::MIN as u64)
         );
         assert_eq!(
-            ErrorCode::MesalinkErrorNone,
+            ErrorCode::OpensslErrorNone,
             ErrorCode::from(std::i64::MIN as u64)
         );
     }
 
-    const ERROR_CODES: [ErrorCode; 103] = [
-        ErrorCode::MesalinkErrorNone,
-        ErrorCode::MesalinkErrorZeroReturn,
-        ErrorCode::MesalinkErrorWantRead,
-        ErrorCode::MesalinkErrorWantWrite,
-        ErrorCode::MesalinkErrorWantConnect,
-        ErrorCode::MesalinkErrorWantAccept,
-        ErrorCode::MesalinkErrorSyscall,
-        ErrorCode::MesalinkErrorSsl,
-        ErrorCode::MesalinkNullPointer,
-        ErrorCode::MesalinkErrorMalformedObject,
-        ErrorCode::MesalinkErrorBadFuncArg,
-        ErrorCode::MesalinkErrorPanic,
-        ErrorCode::MesalinkErrorLock,
+    const ERROR_CODES: [ErrorCode; 104] = [
+        ErrorCode::OpensslErrorNone,
+        ErrorCode::OpensslErrorZeroReturn,
+        ErrorCode::OpensslErrorWantRead,
+        ErrorCode::OpensslErrorWantWrite,
+        ErrorCode::OpensslErrorWantConnect,
+        ErrorCode::OpensslErrorWantAccept,
+        ErrorCode::OpensslErrorSyscall,
+        ErrorCode::OpensslErrorSsl,
+        ErrorCode::OpensslNullPointer,
+        ErrorCode::OpensslErrorMalformedObject,
+        ErrorCode::OpensslErrorBadFuncArg,
+        ErrorCode::OpensslErrorPanic,
+        ErrorCode::OpensslErrorLock,
         ErrorCode::IoErrorNotFound,
         ErrorCode::IoErrorPermissionDenied,
         ErrorCode::IoErrorConnectionRefused,
@@ -993,6 +990,7 @@ mod tests {
         ErrorCode::TLSErrorInvalidDNSName,
         ErrorCode::TLSErrorHandshakeNotComplete,
         ErrorCode::TLSErrorPeerSentOversizedRecord,
+        ErrorCode::TLSErrorNoApplicationProtocol,
         ErrorCode::UndefinedError,
     ];
 
@@ -1004,25 +1002,25 @@ mod tests {
     }
 
     #[test]
-    fn mesalink_error_code_conversion() {
-        let mesalink_errors: [MesalinkBuiltinError; 11] = [
-            MesalinkBuiltinError::ZeroReturn,
-            MesalinkBuiltinError::WantRead,
-            MesalinkBuiltinError::WantWrite,
-            MesalinkBuiltinError::WantConnect,
-            MesalinkBuiltinError::WantAccept,
-            MesalinkBuiltinError::Syscall,
-            MesalinkBuiltinError::Ssl,
-            MesalinkBuiltinError::NullPointer,
-            MesalinkBuiltinError::MalformedObject,
-            MesalinkBuiltinError::BadFuncArg,
-            MesalinkBuiltinError::Panic,
+    fn tabby_error_code_conversion() {
+        let tabby_errors: [OpensslError; 11] = [
+            OpensslError::ZeroReturn,
+            OpensslError::WantRead,
+            OpensslError::WantWrite,
+            OpensslError::WantConnect,
+            OpensslError::WantAccept,
+            OpensslError::Syscall,
+            OpensslError::Ssl,
+            OpensslError::NullPointer,
+            OpensslError::MalformedObject,
+            OpensslError::BadFuncArg,
+            OpensslError::Panic,
         ];
 
-        for error in mesalink_errors.into_iter() {
+        for error in tabby_errors.into_iter() {
             use std::error::Error;
-            let mesalink_error = error!(MesalinkErrorType::Builtin(error.clone()));
-            let error_code = ErrorCode::from(&mesalink_error);
+            let tabby_error = error!(ErrorKind::Builtin(error.clone()));
+            let error_code = ErrorCode::from(&tabby_error);
             println!("{}, {}", error, error.description());
             assert_eq!(true, 0 == error_code as c_ulong >> 24);
             assert_eq!(true, 0 != error_code as c_ulong & 0xFFFFFF);
@@ -1054,8 +1052,8 @@ mod tests {
 
         for error_kind in io_errors.into_iter() {
             let io_error = io::Error::from(*error_kind);
-            let mesalink_error = error!(MesalinkErrorType::Io(io_error));
-            let error_code = ErrorCode::from(&mesalink_error);
+            let tabby_error = error!(ErrorKind::Io(io_error));
+            let error_code = ErrorCode::from(&tabby_error);
             assert_eq!(true, 2 == error_code as c_ulong >> 24);
             assert_eq!(true, 0 != error_code as c_ulong & 0xFFFFFF);
         }
@@ -1064,7 +1062,7 @@ mod tests {
     #[test]
     fn tls_error_conversion() {
         use rustls::internal::msgs::enums::{AlertDescription, ContentType, HandshakeType};
-        let tls_errors: [rustls::TLSError; 15] = [
+        let tls_errors: [rustls::TLSError; 16] = [
             rustls::TLSError::InappropriateMessage {
                 expect_types: vec![],
                 got_type: ContentType::Heartbeat,
@@ -1086,11 +1084,12 @@ mod tests {
             rustls::TLSError::InvalidDNSName("".to_string()),
             rustls::TLSError::HandshakeNotComplete,
             rustls::TLSError::PeerSentOversizedRecord,
+            rustls::TLSError::NoApplicationProtocol,
         ];
 
         for error in tls_errors.into_iter() {
-            let mesalink_error = error!(MesalinkErrorType::Tls(error.clone()));
-            let error_code = ErrorCode::from(&mesalink_error);
+            let tabby_error = error!(ErrorKind::Tls(error.clone()));
+            let error_code = ErrorCode::from(&tabby_error);
             assert_eq!(true, 3 == error_code as c_ulong >> 24);
             assert_eq!(true, 0 != error_code as c_ulong & 0xFFFFFF);
         }
@@ -1122,8 +1121,8 @@ mod tests {
 
         for pki_error in webpki_errors.into_iter() {
             let error = rustls::TLSError::WebPKIError(*pki_error);
-            let mesalink_error = error!(MesalinkErrorType::Tls(error));
-            let error_code = ErrorCode::from(&mesalink_error);
+            let tabby_error = error!(ErrorKind::Tls(error));
+            let error_code = ErrorCode::from(&tabby_error);
             assert_eq!(true, 3 == error_code as c_ulong >> 24);
             assert_eq!(true, 0 != error_code as c_ulong & 0xFFFFFF);
         }
@@ -1171,8 +1170,8 @@ mod tests {
 
         for alert in alerts.into_iter() {
             let error = rustls::TLSError::AlertReceived(*alert);
-            let mesalink_error = error!(MesalinkErrorType::Tls(error));
-            let error_code = ErrorCode::from(&mesalink_error);
+            let tabby_error = error!(ErrorKind::Tls(error));
+            let error_code = ErrorCode::from(&tabby_error);
             assert_eq!(true, 3 == error_code as c_ulong >> 24);
             assert_eq!(true, 0 != error_code as c_ulong & 0xFFFFFF);
         }
@@ -1181,8 +1180,7 @@ mod tests {
     #[test]
     fn error_strings() {
         for code in ERROR_CODES.into_iter() {
-            let error_string_ptr: *const c_char =
-                mesalink_ERR_reason_error_string(*code as c_ulong);
+            let error_string_ptr: *const c_char = tabby_ERR_reason_error_string(*code as c_ulong);
             assert_ne!(ptr::null(), error_string_ptr);
             let len = unsafe { libc::strlen(error_string_ptr) };
             let ptr = code.as_u8_slice().as_ptr() as *const c_char;
@@ -1196,9 +1194,9 @@ mod tests {
         let buf_ptr = buf.as_mut_ptr() as *mut c_char;
         for code in ERROR_CODES.into_iter() {
             let builtin_error_string_ptr: *const c_char =
-                mesalink_ERR_reason_error_string(*code as c_ulong);
+                tabby_ERR_reason_error_string(*code as c_ulong);
             let buf_error_string_ptr =
-                unsafe { mesalink_ERR_error_string_n(*code as c_ulong, buf_ptr, buf.len()) };
+                unsafe { tabby_ERR_error_string_n(*code as c_ulong, buf_ptr, buf.len()) };
             let builtin_error_string_len = unsafe { libc::strlen(builtin_error_string_ptr) };
             let buf_error_string_len = unsafe { libc::strlen(buf_error_string_ptr) };
             assert_eq!(buf_error_string_len, builtin_error_string_len);
@@ -1220,9 +1218,9 @@ mod tests {
         let buf_ptr = buf.as_mut_ptr() as *mut c_char;
         for code in ERROR_CODES.into_iter() {
             let builtin_error_string_ptr: *const c_char =
-                mesalink_ERR_reason_error_string(*code as c_ulong);
+                tabby_ERR_reason_error_string(*code as c_ulong);
             let buf_error_string_ptr =
-                unsafe { mesalink_ERR_error_string_n(*code as c_ulong, buf_ptr, buf.len()) };
+                unsafe { tabby_ERR_error_string_n(*code as c_ulong, buf_ptr, buf.len()) };
             let buf_error_string_len = unsafe { libc::strlen(buf_error_string_ptr) };
             //assert_eq!(buf_error_string_len, buf_error_string_len);
             assert_eq!(0, unsafe {
@@ -1240,9 +1238,9 @@ mod tests {
     fn error_string_n_with_null_buf() {
         for code in ERROR_CODES.into_iter() {
             let builtin_error_string_ptr: *const c_char =
-                mesalink_ERR_reason_error_string(*code as c_ulong);
+                tabby_ERR_reason_error_string(*code as c_ulong);
             let buf_error_string_ptr = unsafe {
-                mesalink_ERR_error_string_n(*code as c_ulong, ptr::null_mut() as *mut c_char, 0)
+                tabby_ERR_error_string_n(*code as c_ulong, ptr::null_mut() as *mut c_char, 0)
             };
 
             let builtin_error_string_len = unsafe { libc::strlen(builtin_error_string_ptr) };
@@ -1264,17 +1262,17 @@ mod tests {
         use crate::libcrypto::bio::OpenFileStream;
         use std::io;
 
-        mesalink_ERR_load_error_strings();
-        ErrorQueue::push_error(error!(MesalinkBuiltinError::None.into()));
-        ErrorQueue::push_error(error!(MesalinkBuiltinError::BadFuncArg.into()));
-        ErrorQueue::push_error(error!(MesalinkBuiltinError::MalformedObject.into()));
+        tabby_ERR_load_error_strings();
+        ErrorQueue::push_error(error!(OpensslError::None.into()));
+        ErrorQueue::push_error(error!(OpensslError::BadFuncArg.into()));
+        ErrorQueue::push_error(error!(OpensslError::MalformedObject.into()));
         let stderr = io::stderr();
         let file = unsafe { stderr.open_file_stream_w() };
         unsafe {
-            mesalink_ERR_print_errors_fp(file);
-            mesalink_ERR_print_errors_fp(ptr::null_mut());
+            tabby_ERR_print_errors_fp(file);
+            tabby_ERR_print_errors_fp(ptr::null_mut());
         }
-        mesalink_ERR_clear_error();
-        mesalink_ERR_free_error_strings();
+        tabby_ERR_clear_error();
+        tabby_ERR_free_error_strings();
     }
 }

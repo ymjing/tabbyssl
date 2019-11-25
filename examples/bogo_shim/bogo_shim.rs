@@ -1,11 +1,6 @@
 /*
- *   __  __                 _     _       _
- *  |  \/  | ___  ___  __ _| |   (_)_ __ | | __
- *  | |\/| |/ _ \/ __|/ _` | |   | | '_ \| |/ /
- *  | |  | |  __/\__ \ (_| | |___| | | | |   <
- *  |_|  |_|\___||___/\__,_|_____|_|_| |_|_|\_\
- *
- * Copyright (c) 2017-2018, The MesaLink Authors.
+ * Copyright (c) 2019, Yiming Jing
+ * Copyright (c) 2017-2019, The MesaLink Authors
  * All rights reserved.
  *
  * This work is licensed under the terms of the BSD 3-Clause License.
@@ -36,13 +31,13 @@
 use env_logger;
 use libc;
 
-use mesalink::libssl::err::ErrorCode;
-use mesalink::libssl::{err, ssl};
 use std::env;
 use std::ffi::CString;
 use std::io::Write;
 use std::net;
 use std::process;
+use tabbyssl::libssl::err::ErrorCode;
+use tabbyssl::libssl::{err, ssl};
 
 static BOGO_NACK: i32 = 89;
 
@@ -163,90 +158,90 @@ fn handle_err(err: ErrorCode) -> ! {
     }
 }
 
-fn setup_ctx(opts: &Options) -> *mut ssl::MESALINK_CTX_ARC {
+fn setup_ctx(opts: &Options) -> *mut ssl::TABBY_CTX_ARC {
     let method = match (opts.tls12_supported(), opts.tls13_supported(), opts.server) {
-        (true, true, false) => ssl::mesalink_TLS_client_method(),
-        (true, true, true) => ssl::mesalink_TLS_server_method(),
-        (true, false, false) => ssl::mesalink_TLSv1_2_client_method(),
-        (true, false, true) => ssl::mesalink_TLSv1_2_server_method(),
-        (false, true, false) => ssl::mesalink_TLSv1_3_client_method(),
-        (false, true, true) => ssl::mesalink_TLSv1_3_server_method(),
+        (true, true, false) => ssl::tabby_TLS_client_method(),
+        (true, true, true) => ssl::tabby_TLS_server_method(),
+        (true, false, false) => ssl::tabby_TLSv1_2_client_method(),
+        (true, false, true) => ssl::tabby_TLSv1_2_server_method(),
+        (false, true, false) => ssl::tabby_TLSv1_3_client_method(),
+        (false, true, true) => ssl::tabby_TLSv1_3_server_method(),
         _ => return std::ptr::null_mut(),
     };
-    let ctx = ssl::mesalink_SSL_CTX_new(method as *mut ssl::MESALINK_METHOD);
-    ssl::mesalink_SSL_CTX_set_session_cache_mode(ctx, 0x3); // enable both client and server session cache
+    let ctx = ssl::tabby_SSL_CTX_new(method as *mut ssl::TABBY_METHOD);
+    ssl::tabby_SSL_CTX_set_session_cache_mode(ctx, 0x3); // enable both client and server session cache
     if opts.server {
-        if ssl::mesalink_SSL_CTX_use_certificate_chain_file(
+        if ssl::tabby_SSL_CTX_use_certificate_chain_file(
             ctx,
             CString::new(opts.cert_file.clone()).unwrap().as_ptr() as *const libc::c_char,
             0,
         ) != 1
         {
-            println_err!("mesalink_SSL_CTX_use_certificate_chain_file failed");
-            println_err!("{:?}", ErrorCode::from(err::mesalink_ERR_peek_last_error()));
+            println_err!("tabby_SSL_CTX_use_certificate_chain_file failed");
+            println_err!("{:?}", ErrorCode::from(err::tabby_ERR_peek_last_error()));
         }
-        if ssl::mesalink_SSL_CTX_use_PrivateKey_file(
+        if ssl::tabby_SSL_CTX_use_PrivateKey_file(
             ctx,
             CString::new(opts.key_file.clone()).unwrap().as_ptr() as *const libc::c_char,
             0,
         ) != 1
         {
-            println_err!("mesalink_SSL_CTX_use_PrivateKey_file failed");
-            println_err!("{:?}", ErrorCode::from(err::mesalink_ERR_peek_last_error()));
+            println_err!("tabby_SSL_CTX_use_PrivateKey_file failed");
+            println_err!("{:?}", ErrorCode::from(err::tabby_ERR_peek_last_error()));
         }
-        if ssl::mesalink_SSL_CTX_check_private_key(ctx) != 1 {
-            println_err!("mesalink_SSL_CTX_check_private_key failed");
-            println_err!("{:?}", ErrorCode::from(err::mesalink_ERR_peek_last_error()));
+        if ssl::tabby_SSL_CTX_check_private_key(ctx) != 1 {
+            println_err!("tabby_SSL_CTX_check_private_key failed");
+            println_err!("{:?}", ErrorCode::from(err::tabby_ERR_peek_last_error()));
         }
     }
-    ssl::mesalink_SSL_CTX_set_verify(ctx, 0, None);
+    ssl::tabby_SSL_CTX_set_verify(ctx, 0, None);
     ctx
 }
 
-fn cleanup(ssl: *mut ssl::MESALINK_SSL, ctx: *mut ssl::MESALINK_CTX_ARC) {
+fn cleanup(ssl: *mut ssl::TABBY_SSL, ctx: *mut ssl::TABBY_CTX_ARC) {
     if !ssl.is_null() {
-        ssl::mesalink_SSL_free(ssl);
+        ssl::tabby_SSL_free(ssl);
     }
     if !ctx.is_null() {
-        ssl::mesalink_SSL_CTX_free(ctx);
+        ssl::tabby_SSL_CTX_free(ctx);
     }
 }
 
-fn do_connection(opts: &Options, ctx: *mut ssl::MESALINK_CTX_ARC, count: usize) {
+fn do_connection(opts: &Options, ctx: *mut ssl::TABBY_CTX_ARC, count: usize) {
     use std::os::unix::io::AsRawFd;
     let conn = net::TcpStream::connect(("localhost", opts.port)).expect("cannot connect");
     let mut sent_shutdown = false;
     let mut seen_eof = false;
 
-    let ssl: *mut ssl::MESALINK_SSL = ssl::mesalink_SSL_new(ctx);
+    let ssl: *mut ssl::TABBY_SSL = ssl::tabby_SSL_new(ctx);
 
     if ssl.is_null() {
-        ssl::mesalink_SSL_CTX_free(ctx);
-        quit_err("MESALINK_SSL is null");
+        ssl::tabby_SSL_CTX_free(ctx);
+        quit_err("TABBY_SSL is null");
     }
 
-    if ssl::mesalink_SSL_set_tlsext_host_name(
+    if ssl::tabby_SSL_set_tlsext_host_name(
         ssl,
         CString::new(opts.host_name.clone()).unwrap().as_ptr() as *const libc::c_char,
     ) != 1
     {
         cleanup(ssl, ctx);
-        quit_err("mesalink_SSL_set_tlsext_host_name failed\n");
+        quit_err("tabby_SSL_set_tlsext_host_name failed\n");
     }
-    if ssl::mesalink_SSL_set_fd(ssl, conn.as_raw_fd()) != 1 {
+    if ssl::tabby_SSL_set_fd(ssl, conn.as_raw_fd()) != 1 {
         cleanup(ssl, ctx);
-        quit_err("mesalink_SSL_set_fd failed\n");
+        quit_err("tabby_SSL_set_fd failed\n");
     }
 
     if opts.shim_writes_first_on_resume && count > 0 && opts.enable_early_data {
         let len: libc::size_t = 0;
         let len_ptr = Box::into_raw(Box::new(len));
         let buf = b"hello";
-        ssl::mesalink_SSL_write_early_data(ssl, buf.as_ptr() as *const libc::c_uchar, 5, len_ptr);
+        ssl::tabby_SSL_write_early_data(ssl, buf.as_ptr() as *const libc::c_uchar, 5, len_ptr);
         let written_len = unsafe { Box::from_raw(len_ptr) };
         if *written_len < 5 {
             let remaining_buf = &buf[*written_len..];
-            ssl::mesalink_SSL_write(
+            ssl::tabby_SSL_write(
                 ssl,
                 remaining_buf.as_ptr() as *const libc::c_uchar,
                 (5 - *written_len) as libc::c_int,
@@ -256,17 +251,17 @@ fn do_connection(opts: &Options, ctx: *mut ssl::MESALINK_CTX_ARC, count: usize) 
 
     use std::{thread, time};
     if !opts.server {
-        if ssl::mesalink_SSL_connect(ssl) != 1 {
-            let err = ErrorCode::from(ssl::mesalink_SSL_get_error(ssl, -1) as libc::c_ulong);
-            ssl::mesalink_SSL_flush(ssl);
+        if ssl::tabby_SSL_connect(ssl) != 1 {
+            let err = ErrorCode::from(ssl::tabby_SSL_get_error(ssl, -1) as libc::c_ulong);
+            ssl::tabby_SSL_flush(ssl);
             thread::sleep(time::Duration::from_millis(200));
             cleanup(ssl, ctx);
             handle_err(err);
         }
     } else {
-        if ssl::mesalink_SSL_accept(ssl) != 1 {
-            let err = ErrorCode::from(ssl::mesalink_SSL_get_error(ssl, -1) as libc::c_ulong);
-            ssl::mesalink_SSL_flush(ssl);
+        if ssl::tabby_SSL_accept(ssl) != 1 {
+            let err = ErrorCode::from(ssl::tabby_SSL_get_error(ssl, -1) as libc::c_ulong);
+            ssl::tabby_SSL_flush(ssl);
             thread::sleep(time::Duration::from_millis(200));
             cleanup(ssl, ctx);
             handle_err(err);
@@ -274,7 +269,7 @@ fn do_connection(opts: &Options, ctx: *mut ssl::MESALINK_CTX_ARC, count: usize) 
     }
 
     if opts.shim_writes_first {
-        ssl::mesalink_SSL_write(
+        ssl::tabby_SSL_write(
             ssl,
             b"hello".as_ptr() as *const libc::c_uchar,
             5 as libc::c_int,
@@ -284,17 +279,17 @@ fn do_connection(opts: &Options, ctx: *mut ssl::MESALINK_CTX_ARC, count: usize) 
     let mut len;
     let mut buf = [0u8; 1024];
     loop {
-        ssl::mesalink_SSL_flush(ssl);
+        ssl::tabby_SSL_flush(ssl);
 
         if opts.enable_early_data && count > 0 {
-            let early_data_accepted = ssl::mesalink_SSL_get_early_data_status(ssl) == 2;
+            let early_data_accepted = ssl::tabby_SSL_get_early_data_status(ssl) == 2;
             if opts.expect_accept_early_data && !early_data_accepted {
                 quit_err("Early data was not accepted, but we expect the opposite");
             } else if opts.expect_reject_early_data && early_data_accepted {
                 quit_err("Early data was accepted, but we expect the opposite");
             }
             if opts.expect_version == 0x0304 {
-                let version_ptr = ssl::mesalink_SSL_get_version(ssl);
+                let version_ptr = ssl::tabby_SSL_get_version(ssl);
                 let version = unsafe { std::ffi::CStr::from_ptr(version_ptr).to_str().unwrap() };
                 if version != "TLS1.3" {
                     quit_err("wrong protocol version");
@@ -302,23 +297,23 @@ fn do_connection(opts: &Options, ctx: *mut ssl::MESALINK_CTX_ARC, count: usize) 
             }
         }
 
-        len = ssl::mesalink_SSL_read(
+        len = ssl::tabby_SSL_read(
             ssl,
             buf.as_mut_ptr() as *mut libc::c_uchar,
             opts.read_size as libc::c_int,
         );
         if len == 0 {
-            let error = ErrorCode::from(ssl::mesalink_SSL_get_error(ssl, len) as u32);
+            let error = ErrorCode::from(ssl::tabby_SSL_get_error(ssl, len) as u32);
             match error {
-                ErrorCode::MesalinkErrorNone => (),
-                ErrorCode::MesalinkErrorWantRead | ErrorCode::MesalinkErrorWantWrite => continue,
+                ErrorCode::OpensslErrorNone => (),
+                ErrorCode::OpensslErrorWantRead | ErrorCode::OpensslErrorWantWrite => continue,
                 ErrorCode::IoErrorConnectionAborted => {
                     if opts.check_close_notify {
                         println!("close notify ok");
                     }
                     println!("EOF (tls)");
-                    ssl::mesalink_SSL_flush(ssl);
-                    ssl::mesalink_SSL_free(ssl);
+                    ssl::tabby_SSL_flush(ssl);
+                    ssl::tabby_SSL_free(ssl);
                     return;
                 }
                 ErrorCode::IoErrorConnectionReset => {
@@ -328,7 +323,7 @@ fn do_connection(opts: &Options, ctx: *mut ssl::MESALINK_CTX_ARC, count: usize) 
                     }
                 }
                 _ => {
-                    ssl::mesalink_SSL_flush(ssl);
+                    ssl::tabby_SSL_flush(ssl);
                     cleanup(ssl, ctx);
                     handle_err(error);
                 }
@@ -337,25 +332,25 @@ fn do_connection(opts: &Options, ctx: *mut ssl::MESALINK_CTX_ARC, count: usize) 
                 if !seen_eof {
                     seen_eof = true;
                 } else {
-                    ssl::mesalink_SSL_flush(ssl);
+                    ssl::tabby_SSL_flush(ssl);
                     cleanup(ssl, ctx);
                     quit_err(":CLOSE_WITHOUT_CLOSE_NOTIFY:");
                 }
             } else {
                 println!("EOF (plain)");
-                ssl::mesalink_SSL_flush(ssl);
-                ssl::mesalink_SSL_free(ssl);
+                ssl::tabby_SSL_flush(ssl);
+                ssl::tabby_SSL_free(ssl);
                 return;
             }
         } else if len < 0 {
-            let err = ErrorCode::from(ssl::mesalink_SSL_get_error(ssl, len) as libc::c_ulong);
-            ssl::mesalink_SSL_flush(ssl);
+            let err = ErrorCode::from(ssl::tabby_SSL_get_error(ssl, len) as libc::c_ulong);
+            ssl::tabby_SSL_flush(ssl);
             cleanup(ssl, ctx);
             handle_err(err);
         }
 
         if opts.shim_shut_down && !sent_shutdown {
-            ssl::mesalink_SSL_shutdown(ssl);
+            ssl::tabby_SSL_shutdown(ssl);
             sent_shutdown = true;
         }
 
@@ -363,7 +358,7 @@ fn do_connection(opts: &Options, ctx: *mut ssl::MESALINK_CTX_ARC, count: usize) 
             *b ^= 0xff;
         }
 
-        ssl::mesalink_SSL_write(ssl, buf.as_ptr() as *const libc::c_uchar, len);
+        ssl::tabby_SSL_write(ssl, buf.as_ptr() as *const libc::c_uchar, len);
     }
     // unreachable
 }
@@ -415,7 +410,7 @@ fn main() {
                 opts.max_version = Some(max);
             }
             "-max-send-fragment" => {
-                println!("not checking {}; disabled for MesaLink", arg);
+                println!("not checking {}; disabled for TabbySSL", arg);
                 process::exit(BOGO_NACK);
             }
             "-read-size" => {
@@ -444,7 +439,7 @@ fn main() {
                 println!("not checking {} {}; NYI", arg, args.remove(0));
             }
             "-expect-client-ca-list" => {
-                println!("not checking {} {}; NYI; disabled for MesaLink", arg, args.remove(0));
+                println!("not checking {} {}; NYI; disabled for TabbySSL", arg, args.remove(0));
                 process::exit(BOGO_NACK);
             }
             "-expect-secure-renegotiation" |
@@ -459,7 +454,7 @@ fn main() {
             "-use-export-context" |
             "-no-ticket" |
             "-on-resume-no-ticket" => {
-                println!("not checking {}; disabled for MesaLink", arg);
+                println!("not checking {}; disabled for TabbySSL", arg);
                 process::exit(BOGO_NACK);
             }
 
@@ -471,7 +466,7 @@ fn main() {
             "-advertise-alpn" |
             "-use-null-client-ca-list" |
             "-enable-signed-cert-timestamps" => {
-                println!("not checking {}; disabled for MesaLink", arg);
+                println!("not checking {}; disabled for TabbySSL", arg);
                 process::exit(BOGO_NACK);
             }
             "-enable-early-data" |
@@ -598,13 +593,13 @@ fn main() {
     let ctx = setup_ctx(&opts);
 
     if ctx.is_null() {
-        quit_err("MESALINK_SSL_CTX is null");
+        quit_err("TABBY_SSL_CTX is null");
     }
 
     for i in 0..opts.resume_count + 1 {
         do_connection(&opts, ctx, i);
     }
     if !ctx.is_null() {
-        ssl::mesalink_SSL_CTX_free(ctx);
+        ssl::tabby_SSL_CTX_free(ctx);
     }
 }

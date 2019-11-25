@@ -1,0 +1,17 @@
+nobase_include_HEADERS+= \
+                    tabbyssl/options.h \
+                    tabbyssl/version.h \
+                    tabbyssl/visibility.h \
+                    tabbyssl/ssl.h \
+                    tabbyssl/err.h \
+                    tabbyssl/x509.h \
+                    tabbyssl/bio.h \
+                    tabbyssl/evp.h \
+                    tabbyssl/pem.h \
+                    tabbyssl/openssl/ssl.h \
+                    tabbyssl/openssl/err.h \
+                    tabbyssl/openssl/x509.h \
+                    tabbyssl/openssl/bio.h \
+                    tabbyssl/openssl/evp.h \
+                    tabbyssl/openssl/pem.h \
+                    tabbyssl/openssl/safestack.h

@@ -13,11 +13,11 @@ steps:
       includeRootFolder: false
       archiveType: 'tar'
       tarCompression: 'gz'
-      archiveFile: '$(Build.ArtifactStagingDirectory)/MesaLink-$(build.my_tag)-$(arch).tar.gz'
+      archiveFile: '$(Build.ArtifactStagingDirectory)/TabbySSL-$(build.my_tag)-$(arch).tar.gz'
   - task: CopyFiles@2
     displayName: Copy the NSIS installer
     condition: eq( variables['Agent.OS'], 'Windows_NT' )
     inputs:
       sourceFolder: '$(Build.SourcesDirectory)/build'
-      contents: 'MesaLink*.exe'
+      contents: 'TabbySSL*.exe'
       targetFolder: '$(Build.ArtifactStagingDirectory)'

@@ -1,11 +1,6 @@
 /*
- *   __  __                 _     _       _
- *  |  \/  | ___  ___  __ _| |   (_)_ __ | | __
- *  | |\/| |/ _ \/ __|/ _` | |   | | '_ \| |/ /
- *  | |  | |  __/\__ \ (_| | |___| | | | |   <
- *  |_|  |_|\___||___/\__,_|_____|_|_| |_|_|\_\
- *
- * Copyright (c) 2017-2018, The MesaLink Authors.
+ * Copyright (c) 2019, Yiming Jing
+ * Copyright (c) 2017-2019, The MesaLink Authors
  * All rights reserved.
  *
  * This work is licensed under the terms of the BSD 3-Clause License.
@@ -14,30 +9,26 @@
  */
 
 /// Implementations of OpenSSL ERR APIs.
-/// Please also refer to the header file at mesalink/openssl/err.h
+/// Please also refer to the header file at tabbyssl/openssl/err.h
 #[macro_use]
 pub mod err;
 
 /// Implementations of OpenSSL SSL APIs.
-/// Please also refer to the header file at mesalink/openssl/ssl.h
+/// Please also refer to the header file at tabbyssl/openssl/ssl.h
 pub mod ssl;
 
 /// Implementations of OpenSSL X509 APIs.
-/// Please also refer to the header file at mesalink/openssl/x509.h
+/// Please also refer to the header file at tabbyssl/openssl/x509.h
 pub mod x509;
 
 /// Implementations of OpenSSL STACK APIs.
-/// Please also refer to the header file at mesalink/openssl/safestack.h
+/// Please also refer to the header file at tabbyssl/openssl/safestack.h
 pub mod safestack;
 
 /// This module is essentially the same as the SessionCache implementations from
 /// rustls, except that it uses `hashbrown` and `parking_lot` for better
 /// performance.
 mod cache;
-
-/// Flags reserved for SGX remote attestation
-#[cfg(feature = "sgx")]
-mod sgx;
 
 #[doc(hidden)]
 #[repr(C)]

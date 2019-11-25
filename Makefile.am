@@ -10,7 +10,7 @@ nobase_include_HEADERS=
 DISTCLEANFILES=
 EXTRA_DIST=
 
-DISTCLEANFILES+= mesalink-config
+DISTCLEANFILES+= tabbyssl-config
 EXTRA_DIST+= src
 EXTRA_DIST+= rustls
 EXTRA_DIST+= sct
@@ -20,7 +20,7 @@ EXTRA_DIST+= build.rs
 EXTRA_DIST+= LICENSE
 
 include src/include.am
-include mesalink/include.am
+include tabbyssl/include.am
 include examples/include.am
 
 install-exec-local:	install-generic-config
@@ -37,8 +37,8 @@ maintainer-clean-local:
 	-rm -rf crypto-bench/ring/target
 	-rm Makefile.in
 	-rm Makefile
-	-rm mesalink-config
-	-rm libmesalink.la
+	-rm tabbyssl-config
+	-rm libtabbyssl.la
 	-rm aclocal.m4
 	-rm -rf build-aux
 	-rm -rf autom4te.cache

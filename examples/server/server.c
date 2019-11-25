@@ -1,11 +1,6 @@
 /*
- *   __  __                 _     _       _
- *  |  \/  | ___  ___  __ _| |   (_)_ __ | | __
- *  | |\/| |/ _ \/ __|/ _` | |   | | '_ \| |/ /
- *  | |  | |  __/\__ \ (_| | |___| | | | |   <
- *  |_|  |_|\___||___/\__,_|_____|_|_| |_|_|\_\
- *
- * Copyright (c) 2017-2018, The MesaLink Authors.
+ * Copyright (c) 2019, Yiming Jing
+ * Copyright (c) 2017-2019, The MesaLink Authors
  * All rights reserved.
  *
  * This work is licensed under the terms of the BSD 3-Clause License.
@@ -13,8 +8,8 @@
  *
  */
 
-#include <mesalink/openssl/err.h>
-#include <mesalink/openssl/ssl.h>
+#include <tabbyssl/openssl/err.h>
+#include <tabbyssl/openssl/ssl.h>
 #include <resolv.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +26,7 @@ main(int argc, char *argv[])
   const char *cert_file;
   const char *key_file;
   const char *response = "HTTP/1.0 200 OK\r\nConnection: "
-                         "close\r\n\r\n<html><body><pre>Hello from MesaLink "
+                         "close\r\n\r\n<html><body><pre>Hello from TabbySSL "
                          "server</pre></body></html>\r\n";
 
   SSL_CTX *ctx;
