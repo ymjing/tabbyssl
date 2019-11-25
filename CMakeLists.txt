@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.0)
 
 project(MesaLink C CXX)
 set(DEFAULT_BUILD_TYPE "Release")
-set(MESALINK_VERSION_STRING "1.1.0")
+set(TABBYSSL_VERSION_STRING "1.1.0")
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 enable_language(Rust)
@@ -27,10 +27,10 @@ if(RUSTC_VERSION AND RUSTC_VERSION VERSION_LESS 1.31)
 endif()
 
 project(MesaLink VERSION 15.1.0)
-set(LIB_NAME mesalink)
+set(LIB_NAME tabbyssl)
 
 # Config options
-configure_file(${PROJECT_SOURCE_DIR}/mesalink/version.h.cmake.in ${PROJECT_SOURCE_DIR}/mesalink/version.h @ONLY)
+configure_file(${PROJECT_SOURCE_DIR}/tabbyssl/version.h.cmake.in ${PROJECT_SOURCE_DIR}/tabbyssl/version.h @ONLY)
 
 if(WIN32)
     set(HAVE_WINDOWS ON)
@@ -104,19 +104,19 @@ endif()
 
 string(APPEND CONFIG_FEATURES verifier,)
 
-configure_file(${PROJECT_SOURCE_DIR}/mesalink/options.h.cmake.in ${PROJECT_SOURCE_DIR}/mesalink/options.h @ONLY)
+configure_file(${PROJECT_SOURCE_DIR}/tabbyssl/options.h.cmake.in ${PROJECT_SOURCE_DIR}/tabbyssl/options.h @ONLY)
 
 # Build MesaLink and its examples
-cargo_build(NAME mesalink CROSS_RUST_TARGET ${RUST_TARGET} FEATURES ${CONFIG_FEATURES})
+cargo_build(NAME tabbyssl CROSS_RUST_TARGET ${RUST_TARGET} FEATURES ${CONFIG_FEATURES})
 
 if(UNIX AND HAVE_EXAMPLES)
     add_executable(client examples/client/client.c)
     target_include_directories(client PUBLIC ${CMAKE_SOURCE_DIR})
-    target_link_libraries(client mesalink)
+    target_link_libraries(client tabbyssl)
 
     add_executable(server examples/server/server.c)
     target_include_directories(server PUBLIC ${CMAKE_SOURCE_DIR})
-    target_link_libraries(server mesalink)
+    target_link_libraries(server tabbyssl)
 endif()
 
 # Install the MesaLink shared library and headers
@@ -148,7 +148,7 @@ if(UNIX)
                                   WORKING_DIRECTORY ${CMAKE_INSTALL_FULL_LIBDIR})")
 endif()
 
-install(DIRECTORY mesalink
+install(DIRECTORY tabbyssl
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     COMPONENT headers
 )
@@ -157,7 +157,7 @@ install(DIRECTORY mesalink
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_PACKAGE_VENDOR "Github")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "MesaLink - A memory-safe and OpenSSL-compatible TLS Library")
-set(CPACK_PACKAGE_VERSION ${MESALINK_VERSION_STRING})
+set(CPACK_PACKAGE_VERSION ${TABBYSSL_VERSION_STRING})
 set(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/LICENSE)
 
 set(CPACK_COMPONENTS_ALL libraries headers)

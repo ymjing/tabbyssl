@@ -2,8 +2,8 @@ steps:
   - task: GithubRelease@0
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     inputs:
-      gitHubConnection: 'mesalink'
-      repositoryName: 'mesalock-linux/mesalink'
+      gitHubConnection: 'tabbyssl'
+      repositoryName: 'mesalock-linux/tabbyssl'
       action: 'edit'
       target: '$(build.sourceVersion)'
       tag: '$(build.my_tag)'

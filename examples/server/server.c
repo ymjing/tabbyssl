@@ -13,8 +13,8 @@
  *
  */
 
-#include <mesalink/openssl/err.h>
-#include <mesalink/openssl/ssl.h>
+#include <tabbyssl/openssl/err.h>
+#include <tabbyssl/openssl/ssl.h>
 #include <resolv.h>
 #include <stdio.h>
 #include <stdlib.h>

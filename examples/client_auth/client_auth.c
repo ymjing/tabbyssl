@@ -1,8 +1,8 @@
 #include <fcntl.h>
-#include <mesalink/openssl/err.h>
-#include <mesalink/openssl/ssl.h>
-#include <mesalink/openssl/x509.h>
-#include <mesalink/openssl/safestack.h>
+#include <tabbyssl/openssl/err.h>
+#include <tabbyssl/openssl/ssl.h>
+#include <tabbyssl/openssl/x509.h>
+#include <tabbyssl/openssl/safestack.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>

@@ -2,18 +2,18 @@
 
 <h1 align="center"> A memory-safe and OpenSSL-compatible TLS library </h1>
 
-[![Build Status](https://travis-ci.com/mesalock-linux/mesalink.svg?branch=master)](https://travis-ci.com/mesalock-linux/mesalink)
-[![Build Status](https://dev.azure.com/mesalink/MesaLink/_apis/build/status/mesalock-linux.mesalink?branchName=master)](https://dev.azure.com/mesalink/MesaLink/_build/latest?definitionId=1&branchName=master)
-[![Coverage Status](https://codecov.io/gh/mesalock-linux/mesalink/branch/master/graph/badge.svg)](https://codecov.io/gh/mesalock-linux/mesalink)
-[![Documentation Status](https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat)](https://mesalock-linux.github.io/mesalink-doc/doc/mesalink/index.html)
-[![Release](https://img.shields.io/github/release/mesalock-linux/mesalink.svg)](https://github.com/mesalock-linux/mesalink/releases)
+[![Build Status](https://travis-ci.com/mesalock-linux/tabbyssl.svg?branch=master)](https://travis-ci.com/mesalock-linux/tabbyssl)
+[![Build Status](https://dev.azure.com/tabbyssl/MesaLink/_apis/build/status/mesalock-linux.tabbyssl?branchName=master)](https://dev.azure.com/tabbyssl/MesaLink/_build/latest?definitionId=1&branchName=master)
+[![Coverage Status](https://codecov.io/gh/mesalock-linux/tabbyssl/branch/master/graph/badge.svg)](https://codecov.io/gh/mesalock-linux/tabbyssl)
+[![Documentation Status](https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat)](https://mesalock-linux.github.io/tabbyssl-doc/doc/tabbyssl/index.html)
+[![Release](https://img.shields.io/github/release/mesalock-linux/tabbyssl.svg)](https://github.com/mesalock-linux/tabbyssl/releases)
 [![License](https://img.shields.io/badge/license-BSD-blue.svg)](LICENSE)
 
 MesaLink is a memory-safe and OpenSSL-compatible TLS library.
 
 ## Release history
 * 1.0.0 (🎂 04-02-2019 🎂)
-  - CMake support; see the updated [CROSS_COMPILE.md](https://github.com/mesalock-linux/mesalink/blob/master/CROSS_COMPILE.md) for cross-compilation instructions
+  - CMake support; see the updated [CROSS_COMPILE.md](https://github.com/mesalock-linux/tabbyssl/blob/master/CROSS_COMPILE.md) for cross-compilation instructions
   - Windows builds (MSVC and MinGW)
   - CI/CD migrated to Azure Pipelines
   - NSIS installer for Win64 available
@@ -92,7 +92,7 @@ features that are considered secure for most use cases:
 $ sudo apt-get install m4 autoconf automake libtool make gcc curl
 $ curl https://sh.rustup.rs -sSf | sh
 
-$ git clone https://github.com/mesalock-linux/mesalink.git
+$ git clone https://github.com/mesalock-linux/tabbyssl.git
 $ ./autogen.sh --enable-examples
 $ make
 ```
@@ -103,7 +103,7 @@ $ make
 $ sudo apt-get install cmake make gcc curl
 $ curl https://sh.rustup.rs -sSf | sh
 
-$ git clone https://github.com/mesalock-linux/mesalink.git
+$ git clone https://github.com/mesalock-linux/tabbyssl.git
 $ mkdir build && cd build
 $ cmake ..
 $ cmake --build .

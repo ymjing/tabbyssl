@@ -1,4 +1,4 @@
-AC_INIT([mesalink], m4_esyscmd([grep version Cargo.toml | head -n1 | awk '{print $3}' | tr -d '"' | tr -d "\n"]), [jingyiming@baidu.com])
+AC_INIT([tabbyssl], m4_esyscmd([grep version Cargo.toml | head -n1 | awk '{print $3}' | tr -d '"' | tr -d "\n"]), [jingyiming@baidu.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h:config.in])
@@ -11,8 +11,8 @@ AC_CANONICAL_HOST
 AC_PREREQ([2.63])
 AM_INIT_AUTOMAKE([1.11 -Wall -Werror foreign no-dependencies subdir-objects])
 
-MESALINK_VERSION=$(grep ^version Cargo.toml | awk '{print $3}' | tr -d '"' | tr -d "\n")
-AC_SUBST(MESALINK_VERSION)
+TABBYSSL_VERSION=$(grep ^version Cargo.toml | awk '{print $3}' | tr -d '"' | tr -d "\n")
+AC_SUBST(TABBYSSL_VERSION)
 
 AC_LANG([C])
 AC_PROG_CC
@@ -25,7 +25,7 @@ LT_PREREQ([2.2])
 LT_INIT
 LT_LANG([C])
 
-MESALINK_LIBRARY_VERSION=15:1:0
+TABBYSSL_LIBRARY_VERSION=10:0:0
 #                        | | |
 #                 +------+ | +---+
 #                 |        |     |
@@ -37,7 +37,7 @@ MESALINK_LIBRARY_VERSION=15:1:0
 #                 |        +- increment if source code has changed
 #                 |           set to zero if current is incremented
 #                 +- increment if interfaces have been added, removed or changed
-AC_SUBST([MESALINK_LIBRARY_VERSION])
+AC_SUBST([TABBYSSL_LIBRARY_VERSION])
 
 AC_CHECK_HEADERS([netdb.h netinet/in.h string.h sys/socket.h unistd.h])
 AC_CHECK_FUNCS([gethostbyname memset socket])
@@ -133,42 +133,6 @@ then
     CARGO_FEATURES=$CARGO_FEATURES" jemalloc_allocator"
 fi
 
-AC_ARG_ENABLE([sni],
-    [AS_HELP_STRING([--enable-sni], [Enable SNI support (default: enabled)])],
-    [ ENABLE_SNI=$enableval ],
-    [ ENABLE_SNI=yes ]
-    )
-if test "$ENABLE_SNI" = "no"
-then
-    CARGO_FEATURES=$CARGO_FEATURES" no_sni_check"
-fi
-
-AC_ARG_ENABLE([client],
-    [AS_HELP_STRING([--enable-client], [Enable client APIs (default: enabled)])],
-    [ ENABLE_CLIENT=$enableval ],
-    [ ENABLE_CLIENT=yes ]
-    )
-if test "$ENABLE_CLIENT" = "yes"
-then
-    CARGO_FEATURES=$CARGO_FEATURES" client_apis"
-    CONFIG_OPTIONS="$CONFIG_OPTIONS HAVE_CLIENT"
-else
-    CONFIG_OPTIONS="$CONFIG_OPTIONS NO_CLIENT"
-fi
-
-AC_ARG_ENABLE([server],
-    [AS_HELP_STRING([--enable-server], [Enable server APIs (default: enabled)])],
-    [ ENABLE_SERVER=$enableval ],
-    [ ENABLE_SERVER=yes ]
-    )
-if test "$ENABLE_SERVER" = "yes"
-then
-    CARGO_FEATURES=$CARGO_FEATURES" server_apis"
-    CONFIG_OPTIONS="$CONFIG_OPTIONS HAVE_SERVER"
-else
-    CONFIG_OPTIONS="$CONFIG_OPTIONS NO_SERVER"
-fi
-
 AC_ARG_ENABLE([errorstrings],
     [AS_HELP_STRING([--enable-errorstrings], [Enable error string table (default: enabled)])],
     [ ENABLE_ERROR_STRINGS=$enableval ],
@@ -260,19 +224,6 @@ else
     CONFIG_OPTIONS="$CONFIG_OPTIONS NO_ECDSA"
 fi
 
-AC_ARG_ENABLE([sgx],
-    [AS_HELP_STRING([--enable-sgx], [Enable experimental SGX attestation (default: disabled)])],
-    [ ENABLE_SGX=$enableval ],
-    [ ENABLE_SGX=no ]
-    )
-if test "$ENABLE_SGX" = "yes"
-then
-    CARGO_FEATURES=$CARGO_FEATURES" sgx"
-    CONFIG_OPTIONS="$CONFIG_OPTIONS HAVE_SGX"
-else
-    CONFIG_OPTIONS="$CONFIG_OPTIONS NO_SGX"
-fi
-
 CARGO_FEATURES=$CARGO_FEATURES" verifier"
 CARGO_FEATURES=$CARGO_FEATURES"\""
 
@@ -288,8 +239,8 @@ AM_CONDITIONAL([BUILD_EXAMPLE_SGX], [[test "x$ENABLE_EXAMPLES" = "xyes"] && [tes
 AX_CREATE_GENERIC_CONFIG
 
 AC_CONFIG_FILES([Makefile])
-AC_CONFIG_FILES([mesalink/options.h])
-AC_CONFIG_FILES([mesalink/version.h])
+AC_CONFIG_FILES([tabbyssl/options.h])
+AC_CONFIG_FILES([tabbyssl/version.h])
 
 AC_OUTPUT
 
@@ -297,7 +248,7 @@ echo "---"
 echo "Running make clean ..."
 make clean >/dev/null 2>&1
 
-OPTION_FILE="mesalink/options.h"
+OPTION_FILE="tabbyssl/options.h"
 rm -f $OPTION_FILE
 
 echo "/* MesaLink options.h" > $OPTION_FILE
@@ -308,8 +259,8 @@ echo " *" >> $OPTION_FILE
 echo " */" >> $OPTION_FILE
 
 echo "" >> $OPTION_FILE
-echo "#ifndef MESALINK_OPTIONS_H" >> $OPTION_FILE
-echo "#define MESALINK_OPTIONS_H" >> $OPTION_FILE
+echo "#ifndef TABBYSSL_OPTIONS_H" >> $OPTION_FILE
+echo "#define TABBYSSL_OPTIONS_H" >> $OPTION_FILE
 echo "" >> $OPTION_FILE
 echo "" >> $OPTION_FILE
 echo "#ifdef __cplusplus" >> $OPTION_FILE
@@ -329,7 +280,7 @@ echo "}" >> $OPTION_FILE
 echo "#endif" >> $OPTION_FILE
 echo "" >> $OPTION_FILE
 echo "" >> $OPTION_FILE
-echo "#endif /* MESALINK_OPTIONS_H */" >> $OPTION_FILE
+echo "#endif /* TABBYSSL_OPTIONS_H */" >> $OPTION_FILE
 echo "" >> $OPTION_FILE
 echo
 
@@ -350,14 +301,5 @@ echo
 echo "   Features "
 echo "   * Jemalloc:                   $ENABLE_JEMALLOC"
 echo "   * Logging and error strings:  $ENABLE_ERROR_STRINGS"
-echo "   * Check SNI:                  $ENABLE_SNI"
-echo "   * AES-GCM:                    $ENABLE_AESGCM"
-echo "   * Chacha20-Poly1305:          $ENABLE_CHACHAPOLY"
-echo "   * TLS 1.3:                    $ENABLE_TLS13"
-echo "   * X25519 key exchange:        $ENABLE_X25519"
-echo "   * EC key exchange:            $ENABLE_ECDH"
-echo "   * RSA signature verification: yes"
-echo "   * EC signature verification:  $ENABLE_ECDSA"
-echo "   * SGX attestation:            $ENABLE_SGX"
 echo ""
 echo "---"

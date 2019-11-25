@@ -14,7 +14,7 @@ $ openssl s_client -connect 127.0.0.1:8400 -cert client.fullchain -key client.ke
 ### Compile the MeasLink client
 
 ```shell
-$ gcc client_auth.c -o client_auth -lmesalink
+$ gcc client_auth.c -o client_auth -ltabbyssl
 ```
 
 ### Test it!

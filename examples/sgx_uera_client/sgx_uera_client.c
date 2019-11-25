@@ -14,8 +14,8 @@
  */
 
 #include <fcntl.h>
-#include <mesalink/openssl/err.h>
-#include <mesalink/openssl/ssl.h>
+#include <tabbyssl/openssl/err.h>
+#include <tabbyssl/openssl/ssl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -102,8 +102,8 @@ main()
 {
   SSL_CTX *ctx;
   ctx = SSL_CTX_new(SSLv23_client_method());
-  mesalink_SSL_CTX_use_PrivateKey_file(ctx, "cert/client.pkcs8", 0);
-  mesalink_SSL_CTX_use_certificate_chain_file(ctx, "cert/client.crt", 0);
+  tabbyssl_SSL_CTX_use_PrivateKey_file(ctx, "cert/client.pkcs8", 0);
+  tabbyssl_SSL_CTX_use_certificate_chain_file(ctx, "cert/client.crt", 0);
 
   char mr_signer[32] = { 0x83, 0xd7, 0x19, 0xe7, 0x7d, 0xea, 0xca, 0x14,
                          0x70, 0xf6, 0xba, 0xf6, 0x2a, 0x4d, 0x77, 0x43,

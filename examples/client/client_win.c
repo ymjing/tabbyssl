@@ -7,10 +7,10 @@
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 #include <stdio.h>
-#include <mesalink/openssl/ssl.h>
+#include <tabbyssl/openssl/ssl.h>
 
 #pragma comment(lib, "Ws2_32.lib")
-#pragma comment(lib, "mesalink.lib")
+#pragma comment(lib, "tabbyssl.lib")
 
 #define DEFAULT_BUFLEN 8192
 #define DEFAULT_PORT "443"

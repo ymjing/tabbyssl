@@ -5,10 +5,10 @@
 .vscode/
 **/*.o
 /.libs/
-mesalink-config
-libmesalink.la
-mesalink/options.h
-mesalink/version.h
+tabbyssl-config
+libtabbyssl.la
+tabbyssl/options.h
+tabbyssl/version.h
 examples/client/client
 examples/sgx_uera_client/sgx_uera_client
 examples/0rtt_client/0rtt_client

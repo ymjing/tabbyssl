@@ -14,9 +14,9 @@
  */
 
 #include <fcntl.h>
-#include <mesalink/openssl/err.h>
-#include <mesalink/openssl/ssl.h>
-#include <mesalink/openssl/x509.h>
+#include <tabbyssl/openssl/err.h>
+#include <tabbyssl/openssl/ssl.h>
+#include <tabbyssl/openssl/x509.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -174,8 +174,8 @@ main()
   }
   // Do two sessions. The first will be a normal request, the
   // second will use early data if the server supports it.
-  tls_client(ctx, "mesalink.io");
-  tls_client(ctx, "mesalink.io");
+  tls_client(ctx, "tabbyssl.io");
+  tls_client(ctx, "tabbyssl.io");
   SSL_CTX_free(ctx);
   return 0;
 }
