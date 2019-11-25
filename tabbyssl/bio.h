@@ -20,34 +20,34 @@ extern "C" {
 #include <tabbyssl/visibility.h>
 #include <stdio.h>
 
-typedef struct TABBYSSL_BIO_METHOD TABBYSSL_BIO_METHOD;
-typedef struct TABBYSSL_BIO TABBYSSL_BIO;
+typedef struct TABBY_BIO_METHOD TABBY_BIO_METHOD;
+typedef struct TABBY_BIO TABBY_BIO;
 
 #define BIO_NOCLOSE         0x00
 #define BIO_CLOSE           0x01
 
-TABBYSSL_API TABBYSSL_BIO *tabbyssl_BIO_new(const TABBYSSL_BIO_METHOD *);
-TABBYSSL_API void tabbyssl_BIO_free(TABBYSSL_BIO *);
+TABBY_API TABBY_BIO *tabby_BIO_new(const TABBY_BIO_METHOD *);
+TABBY_API void tabby_BIO_free(TABBY_BIO *);
 
-TABBYSSL_API int tabbyssl_BIO_read(TABBYSSL_BIO *, void *, int);
-TABBYSSL_API int tabbyssl_BIO_gets(TABBYSSL_BIO *, char *, int);
-TABBYSSL_API int tabbyssl_BIO_write(TABBYSSL_BIO *, const void *, int);
-TABBYSSL_API int tabbyssl_BIO_puts(TABBYSSL_BIO *, const char *);
+TABBY_API int tabby_BIO_read(TABBY_BIO *, void *, int);
+TABBY_API int tabby_BIO_gets(TABBY_BIO *, char *, int);
+TABBY_API int tabby_BIO_write(TABBY_BIO *, const void *, int);
+TABBY_API int tabby_BIO_puts(TABBY_BIO *, const char *);
 
-TABBYSSL_API TABBYSSL_BIO_METHOD *tabbyssl_BIO_s_file(void);
-TABBYSSL_API TABBYSSL_BIO *tabbyssl_BIO_new_fp(FILE *, int);
-TABBYSSL_API void tabbyssl_BIO_set_fp(TABBYSSL_BIO *, FILE *, int);
-TABBYSSL_API int tabbyssl_BIO_get_close(TABBYSSL_BIO *);
-TABBYSSL_API int tabbyssl_BIO_set_close(TABBYSSL_BIO *, long);
+TABBY_API TABBY_BIO_METHOD *tabby_BIO_s_file(void);
+TABBY_API TABBY_BIO *tabby_BIO_new_fp(FILE *, int);
+TABBY_API void tabby_BIO_set_fp(TABBY_BIO *, FILE *, int);
+TABBY_API int tabby_BIO_get_close(TABBY_BIO *);
+TABBY_API int tabby_BIO_set_close(TABBY_BIO *, long);
 
-TABBYSSL_API TABBYSSL_BIO *tabbyssl_BIO_new_file(const char *, const char *);
-TABBYSSL_API int tabbyssl_BIO_read_filename(TABBYSSL_BIO *, const char *);
-TABBYSSL_API int tabbyssl_BIO_write_filename(TABBYSSL_BIO *, const char *);
-TABBYSSL_API int tabbyssl_BIO_append_filename(TABBYSSL_BIO *, const char *);
-TABBYSSL_API int tabbyssl_BIO_rw_filename(TABBYSSL_BIO *, const char *);
+TABBY_API TABBY_BIO *tabby_BIO_new_file(const char *, const char *);
+TABBY_API int tabby_BIO_read_filename(TABBY_BIO *, const char *);
+TABBY_API int tabby_BIO_write_filename(TABBY_BIO *, const char *);
+TABBY_API int tabby_BIO_append_filename(TABBY_BIO *, const char *);
+TABBY_API int tabby_BIO_rw_filename(TABBY_BIO *, const char *);
 
-TABBYSSL_API TABBYSSL_BIO_METHOD *tabbyssl_BIO_s_mem(void);
-TABBYSSL_API TABBYSSL_BIO *tabbyssl_BIO_new_mem_buf(const void *, int);
+TABBY_API TABBY_BIO_METHOD *tabby_BIO_s_mem(void);
+TABBY_API TABBY_BIO *tabby_BIO_new_mem_buf(const void *, int);
 
 #ifdef __cplusplus
 } /* extern C */

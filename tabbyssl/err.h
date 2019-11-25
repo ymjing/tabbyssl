@@ -132,15 +132,15 @@ enum
   UNDEFINED_ERROR = 0xeeeeeeee,
 };
 
-TABBYSSL_API const char *tabbyssl_ERR_error_string_n(unsigned long e,
+TABBY_API const char *tabby_ERR_error_string_n(unsigned long e,
                                                      char *buf, size_t len);
-TABBYSSL_API const char *tabbyssl_ERR_reason_error_string(unsigned long e);
+TABBY_API const char *tabby_ERR_reason_error_string(unsigned long e);
 
-TABBYSSL_API unsigned long tabbyssl_ERR_get_error(void);
-TABBYSSL_API unsigned long tabbyssl_ERR_peek_last_error(void);
-TABBYSSL_API void tabbyssl_ERR_clear_error(void);
+TABBY_API unsigned long tabby_ERR_get_error(void);
+TABBY_API unsigned long tabby_ERR_peek_last_error(void);
+TABBY_API void tabby_ERR_clear_error(void);
 
-TABBYSSL_API void tabbyssl_ERR_print_errors_fp(const FILE *);
+TABBY_API void tabby_ERR_print_errors_fp(const FILE *);
 
 #ifdef __cplusplus
 } /* extern C */

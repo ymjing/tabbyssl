@@ -14,11 +14,11 @@
 #define TABBYSSL_VISIBILITY_H
 
 #ifdef HAVE_UNIX
-#define TABBYSSL_API __attribute__((visibility("default")))
-#define TABBYSSL_LOCAL __attribute__((visiblity("hidden")))
+#define TABBY_API __attribute__((visibility("default")))
+#define TABBY_LOCAL __attribute__((visiblity("hidden")))
 #else
-#define TABBYSSL_API
-#define TABBYSSL_LOCAL
+#define TABBY_API
+#define TABBY_LOCAL
 #endif
 
 #endif /* TABBYSSL_VISIBILITY_H */

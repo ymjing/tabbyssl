@@ -17,10 +17,10 @@
 extern "C" {
 #endif
 
-#define PEM_read_bio_PrivateKey tabbyssl_PEM_read_bio_PrivateKey
-#define PEM_read_PrivateKey tabbyssl_PEM_read_PrivateKey
-#define PEM_read_bio_X509 tabbyssl_PEM_read_bio_X509
-#define PEM_read_X509 tabbyssl_PEM_read_X509
+#define PEM_read_bio_PrivateKey tabby_PEM_read_bio_PrivateKey
+#define PEM_read_PrivateKey tabby_PEM_read_PrivateKey
+#define PEM_read_bio_X509 tabby_PEM_read_bio_X509
+#define PEM_read_X509 tabby_PEM_read_X509
 
 #ifdef __cplusplus
 } /* extern C */

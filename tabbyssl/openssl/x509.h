@@ -19,29 +19,29 @@
 extern "C" {
 #endif
 
-#define X509 TABBYSSL_X509
-#define X509_NAME TABBYSSL_X509_NAME
+#define X509 TABBY_X509
+#define X509_NAME TABBY_X509_NAME
 
-#define STACK_OF(NAME) TABBYSSL_STACK_OF(TABBYSSL_##NAME)
+#define STACK_OF(NAME) TABBY_STACK_OF(TABBY_##NAME)
 
-#define X509_free tabbyssl_X509_free
-#define X509_NAME_free tabbyssl_X509_NAME_free
-#define X509_get_subject tabbyssl_X509_get_subject
-#define X509_get_subject_name tabbyssl_X509_get_subject_name
-#define X509_get_alt_subject_names tabbyssl_X509_get_alt_subject_names
-#define X509_NAME_oneline tabbyssl_X509_NAME_oneline
+#define X509_free tabby_X509_free
+#define X509_NAME_free tabby_X509_NAME_free
+#define X509_get_subject tabby_X509_get_subject
+#define X509_get_subject_name tabby_X509_get_subject_name
+#define X509_get_alt_subject_names tabby_X509_get_alt_subject_names
+#define X509_NAME_oneline tabby_X509_NAME_oneline
 
-#define sk_X509_new_null tabbyssl_sk_X509_new_null
-#define sk_X509_num tabbyssl_sk_X509_num
-#define sk_X509_value tabbyssl_sk_X509_value
-#define sk_X509_push tabbyssl_sk_X509_push
-#define sk_X509_free tabbyssl_sk_X509_free
+#define sk_X509_new_null tabby_sk_X509_new_null
+#define sk_X509_num tabby_sk_X509_num
+#define sk_X509_value tabby_sk_X509_value
+#define sk_X509_push tabby_sk_X509_push
+#define sk_X509_free tabby_sk_X509_free
 
-#define sk_X509_NAME_new_null tabbyssl_sk_X509_NAME_new_null
-#define sk_X509_NAME_num tabbyssl_sk_X509_NAME_num
-#define sk_X509_NAME_value tabbyssl_sk_X509_NAME_value
-#define sk_X509_NAME_push tabbyssl_sk_X509_NAME_push
-#define sk_X509_NAME_free tabbyssl_sk_X509_NAME_free
+#define sk_X509_NAME_new_null tabby_sk_X509_NAME_new_null
+#define sk_X509_NAME_num tabby_sk_X509_NAME_num
+#define sk_X509_NAME_value tabby_sk_X509_NAME_value
+#define sk_X509_NAME_push tabby_sk_X509_NAME_push
+#define sk_X509_NAME_free tabby_sk_X509_NAME_free
 
 #ifdef __cplusplus
 } /* extern C */

@@ -19,9 +19,9 @@ extern "C" {
 #include <tabbyssl/version.h>
 #include <tabbyssl/visibility.h>
 
-typedef struct TABBYSSL_EVP_PKEY TABBYSSL_EVP_PKEY;
+typedef struct TABBY_EVP_PKEY TABBY_EVP_PKEY;
 
-TABBYSSL_API void tabbyssl_EVP_PKEY_free(TABBYSSL_EVP_PKEY *);
+TABBY_API void tabby_EVP_PKEY_free(TABBY_EVP_PKEY *);
 
 #ifdef __cplusplus
 } /* extern C */

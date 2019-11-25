@@ -25,17 +25,18 @@ extern "C" {
 
 typedef int pem_password_cb(char *buf, int size, int rwflag, void *userdata);
 
-TABBYSSL_API TABBYSSL_EVP_PKEY *tabbyssl_PEM_read_bio_PrivateKey(
-  TABBYSSL_BIO *, TABBYSSL_EVP_PKEY **, pem_password_cb *cb, void *u);
-TABBYSSL_API TABBYSSL_EVP_PKEY *tabbyssl_PEM_read_PrivateKey(
-  FILE *fp, TABBYSSL_EVP_PKEY **x, pem_password_cb *cb, void *u);
-TABBYSSL_API TABBYSSL_X509 *tabbyssl_PEM_read_bio_X509(TABBYSSL_BIO *,
-                                                       TABBYSSL_X509 **,
-                                                       pem_password_cb *cb,
-                                                       void *u);
-TABBYSSL_API TABBYSSL_X509 *tabbyssl_PEM_read_X509(FILE *fp, TABBYSSL_X509 **x,
-                                                   pem_password_cb *cb,
-                                                   void *u);
+TABBY_API TABBY_EVP_PKEY *tabby_PEM_read_bio_PrivateKey(TABBY_BIO *,
+                                                        TABBY_EVP_PKEY **,
+                                                        pem_password_cb *cb,
+                                                        void *u);
+TABBY_API TABBY_EVP_PKEY *tabby_PEM_read_PrivateKey(FILE *fp,
+                                                    TABBY_EVP_PKEY **x,
+                                                    pem_password_cb *cb,
+                                                    void *u);
+TABBY_API TABBY_X509 *tabby_PEM_read_bio_X509(TABBY_BIO *, TABBY_X509 **,
+                                              pem_password_cb *cb, void *u);
+TABBY_API TABBY_X509 *tabby_PEM_read_X509(FILE *fp, TABBY_X509 **x,
+                                          pem_password_cb *cb, void *u);
 #ifdef __cplusplus
 } /* extern C */
 #endif
