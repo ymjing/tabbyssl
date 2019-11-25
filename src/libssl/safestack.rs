@@ -8,7 +8,7 @@
  *
  */
 
-use super::err::{MesalinkInnerResult, OpensslError};
+use super::err::{InnerResult, OpensslError};
 use super::x509::{TABBY_X509, TABBY_X509_NAME};
 use super::{SSL_FAILURE, SSL_SUCCESS};
 use crate::error_san::*;
@@ -46,7 +46,7 @@ impl TABBY_STACK_TABBY_X509 {
 /// `sk_X509_new_null` - allocates a new stack of X509.
 ///
 /// ```c
-/// #include <mesalink/openssl/x509.h>
+/// #include <tabbyssl/openssl/x509.h>
 ///
 /// STACK_OF(X509) *sk_X509_new_null(void);
 /// ```
@@ -59,7 +59,7 @@ pub extern "C" fn tabby_sk_X509_new_null() -> *mut TABBY_STACK_TABBY_X509 {
 /// `sk_X509_num` - returns the number of elements in sk or -1 if sk is NULL.
 ///
 /// ```c
-/// #include <mesalink/openssl/safestack.h>
+/// #include <tabbyssl/openssl/safestack.h>
 ///
 /// int sk_X509_num(const STACK_OF(X509) *sk);
 /// ```
@@ -69,7 +69,7 @@ pub extern "C" fn tabby_sk_X509_num(stack_ptr: *const TABBY_STACK_TABBY_X509) ->
 }
 
 #[allow(non_snake_case)]
-fn inner_tabby_sk_X509_num(stack_ptr: *const TABBY_STACK_TABBY_X509) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_sk_X509_num(stack_ptr: *const TABBY_STACK_TABBY_X509) -> InnerResult<c_int> {
     let stack = sanitize_const_ptr_for_ref(stack_ptr)?;
     Ok(stack.stack.len() as c_int)
 }
@@ -78,7 +78,7 @@ fn inner_tabby_sk_X509_num(stack_ptr: *const TABBY_STACK_TABBY_X509) -> Mesalink
 /// idx is out of range then NULL is returned.
 ///
 /// ```c
-/// #include <mesalink/openssl/safestack.h>
+/// #include <tabbyssl/openssl/safestack.h>
 ///
 /// X509 *sk_X509_value(const STACK_OF(X509) *sk, int idx);
 /// ```
@@ -94,7 +94,7 @@ pub extern "C" fn tabby_sk_X509_value(
 fn inner_tabby_sk_X509_value(
     stack_ptr: *const TABBY_STACK_TABBY_X509,
     index: c_int,
-) -> MesalinkInnerResult<*const TABBY_X509> {
+) -> InnerResult<*const TABBY_X509> {
     let stack = sanitize_const_ptr_for_ref(stack_ptr)?;
     let item = stack
         .stack
@@ -106,7 +106,7 @@ fn inner_tabby_sk_X509_value(
 /// `sk_X509_push` - appends ptr to sk.
 ///
 /// ```c
-/// #include <mesalink/openssl/safestack.h>
+/// #include <tabbyssl/openssl/safestack.h>
 ///
 /// int sk_X509_push(STACK_OF(X509) *sk, const X509 *ptr);
 /// ```
@@ -122,7 +122,7 @@ pub extern "C" fn tabby_sk_X509_push(
 fn inner_tabby_sk_X509_push(
     stack_ptr: *mut TABBY_STACK_TABBY_X509,
     item_ptr: *const TABBY_X509,
-) -> MesalinkInnerResult<c_int> {
+) -> InnerResult<c_int> {
     let stack = sanitize_ptr_for_mut_ref(stack_ptr)?;
     let item = sanitize_const_ptr_for_ref(item_ptr)?;
     stack.stack.push(item.clone());
@@ -133,7 +133,7 @@ fn inner_tabby_sk_X509_push(
 /// valid.
 ///
 /// ```c
-/// #include <mesalink/openssl/safestack.h>
+/// #include <tabbyssl/openssl/safestack.h>
 ///
 /// void sk_X509_free(const STACK_OF(X509) *sk);
 /// ```
@@ -143,7 +143,7 @@ pub extern "C" fn tabby_sk_X509_free(stack_ptr: *mut TABBY_STACK_TABBY_X509) {
 }
 
 #[allow(non_snake_case)]
-fn inner_tabby_sk_X509_free(stack_ptr: *mut TABBY_STACK_TABBY_X509) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_sk_X509_free(stack_ptr: *mut TABBY_STACK_TABBY_X509) -> InnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(stack_ptr)?;
     let _ = unsafe { Box::from_raw(stack_ptr) };
     Ok(SSL_SUCCESS)
@@ -179,7 +179,7 @@ impl TABBY_STACK_TABBY_X509_NAME {
 /// `sk_X509_NAME_new_null` - allocates a new stack of X509_NAME.
 ///
 /// ```c
-/// #include <mesalink/openssl/safestack.h>
+/// #include <tabbyssl/openssl/safestack.h>
 ///
 /// STACK_OF(X509_NAME) *sk_X509_NAME_new_null(void);
 /// ```
@@ -192,7 +192,7 @@ pub extern "C" fn tabby_sk_X509_NAME_new_null() -> *mut TABBY_STACK_TABBY_X509_N
 /// `sk_X509_NAME_num` - returns the number of elements in sk or -1 if sk is NULL..
 ///
 /// ```c
-/// #include <mesalink/openssl/safestack.h>
+/// #include <tabbyssl/openssl/safestack.h>
 ///
 /// int sk_X509_NAME_num(const STACK_OF(X509_NAME) *sk);
 /// ```
@@ -204,7 +204,7 @@ pub extern "C" fn tabby_sk_X509_NAME_num(stack_ptr: *const TABBY_STACK_TABBY_X50
 #[allow(non_snake_case)]
 fn inner_tabby_sk_X509_NAME_num(
     stack_ptr: *const TABBY_STACK_TABBY_X509_NAME,
-) -> MesalinkInnerResult<c_int> {
+) -> InnerResult<c_int> {
     let stack = sanitize_const_ptr_for_ref(stack_ptr)?;
     Ok(stack.stack.len() as c_int)
 }
@@ -213,7 +213,7 @@ fn inner_tabby_sk_X509_NAME_num(
 /// If idx is out of range then NULL is returned.
 ///
 /// ```c
-/// #include <mesalink/openssl/safestack.h>
+/// #include <tabbyssl/openssl/safestack.h>
 ///
 /// X509_NAME *sk_X509_NAME_value(const STACK_OF(X509_NAME) *sk, int idx);
 /// ```
@@ -232,7 +232,7 @@ pub extern "C" fn tabby_sk_X509_NAME_value(
 fn inner_tabby_sk_X509_NAME_value(
     stack_ptr: *const TABBY_STACK_TABBY_X509_NAME,
     index: c_int,
-) -> MesalinkInnerResult<*const TABBY_X509_NAME> {
+) -> InnerResult<*const TABBY_X509_NAME> {
     let stack = sanitize_const_ptr_for_ref(stack_ptr)?;
     let item = stack
         .stack
@@ -244,7 +244,7 @@ fn inner_tabby_sk_X509_NAME_value(
 /// `sk_X509_NAME_push` - appends ptr to sk.
 ///
 /// ```c
-/// #include <mesalink/openssl/safestack.h>
+/// #include <tabbyssl/openssl/safestack.h>
 ///
 /// int sk_X509_NAME_push(STACK_OF(X509_NAME) *sk, const X509_NAME *ptr);
 /// ```
@@ -263,7 +263,7 @@ pub extern "C" fn tabby_sk_X509_NAME_push(
 fn inner_tabby_sk_X509_NAME_push(
     stack_ptr: *mut TABBY_STACK_TABBY_X509_NAME,
     item_ptr: *const TABBY_X509_NAME,
-) -> MesalinkInnerResult<c_int> {
+) -> InnerResult<c_int> {
     let stack = sanitize_ptr_for_mut_ref(stack_ptr)?;
     let item = sanitize_const_ptr_for_ref(item_ptr)?;
     stack.stack.push(item.clone());
@@ -274,7 +274,7 @@ fn inner_tabby_sk_X509_NAME_push(
 /// valid.
 ///
 /// ```c
-/// #include <mesalink/openssl/safestack.h>
+/// #include <tabbyssl/openssl/safestack.h>
 ///
 /// void sk_X509_NAME_free(const STACK_OF(X509_NAME) *sk);
 /// ```
@@ -286,7 +286,7 @@ pub extern "C" fn tabby_sk_X509_NAME_free(stack_ptr: *mut TABBY_STACK_TABBY_X509
 #[allow(non_snake_case)]
 fn inner_tabby_sk_X509_NAME_free(
     stack_ptr: *mut TABBY_STACK_TABBY_X509_NAME,
-) -> MesalinkInnerResult<c_int> {
+) -> InnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(stack_ptr)?;
     let _ = unsafe { Box::from_raw(stack_ptr) };
     Ok(SSL_SUCCESS)

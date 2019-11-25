@@ -10,7 +10,7 @@
 
 use crate::error_san::*;
 use crate::libcrypto::{CRYPTO_FAILURE, CRYPTO_SUCCESS};
-use crate::libssl::err::{MesalinkInnerResult, OpensslError};
+use crate::libssl::err::{InnerResult, OpensslError};
 use crate::{OpaquePointerGuard, MAGIC, MAGIC_SIZE};
 use libc::{c_char, c_int, c_long, c_void};
 use std::{ffi, fs, io, mem, ptr, slice};
@@ -214,7 +214,7 @@ impl<'a> Seek for TABBY_BIO<'a> {
 /// `BIO_new()` returns a new BIO using method `type`
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// BIO *BIO_new(BIO_METHOD *type);
 /// ```
@@ -223,9 +223,7 @@ pub extern "C" fn tabby_BIO_new<'a>(method_ptr: *const TABBY_BIO_METHOD) -> *mut
     check_inner_result!(inner_tabby_bio_new(method_ptr), ptr::null_mut())
 }
 
-fn inner_tabby_bio_new<'a>(
-    method_ptr: *const TABBY_BIO_METHOD,
-) -> MesalinkInnerResult<*mut TABBY_BIO<'a>> {
+fn inner_tabby_bio_new<'a>(method_ptr: *const TABBY_BIO_METHOD) -> InnerResult<*mut TABBY_BIO<'a>> {
     if method_ptr.is_null() {
         return Err(error!(OpensslError::NullPointer.into()));
     }
@@ -248,7 +246,7 @@ fn inner_tabby_bio_new<'a>(
 /// `BIO_free()` frees a BIO
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// int BIO_free(BIO *a);
 /// ```
@@ -257,7 +255,7 @@ pub extern "C" fn tabby_BIO_free(bio_ptr: *mut TABBY_BIO<'_>) {
     let _ = check_inner_result!(inner_tabby_bio_free(bio_ptr), CRYPTO_FAILURE);
 }
 
-fn inner_tabby_bio_free(bio_ptr: *mut TABBY_BIO<'_>) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_bio_free(bio_ptr: *mut TABBY_BIO<'_>) -> InnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let mut bio = unsafe { Box::from_raw(bio_ptr) };
     let inner = mem::replace(&mut bio.inner, MesalinkBioInner::Unspecified);
@@ -293,7 +291,7 @@ fn inner_tabby_bio_read(
     bio_ptr: *mut TABBY_BIO<'_>,
     buf_ptr: *mut c_void,
     len: c_int,
-) -> MesalinkInnerResult<c_int> {
+) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     if !bio.is_initialized() {
         // Mem or file not assigned yet
@@ -329,7 +327,7 @@ fn inner_tabby_bio_gets(
     bio_ptr: *mut TABBY_BIO<'_>,
     buf_ptr: *mut c_char,
     size: c_int,
-) -> MesalinkInnerResult<c_int> {
+) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     if !bio.is_initialized() {
         // Mem or file not assigned yet
@@ -365,7 +363,7 @@ fn inner_tabby_bio_write(
     bio_ptr: *mut TABBY_BIO<'_>,
     buf_ptr: *const c_void,
     len: c_int,
-) -> MesalinkInnerResult<c_int> {
+) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     if !bio.is_initialized() {
         // Mem or file not assigned yet
@@ -393,10 +391,7 @@ pub extern "C" fn tabby_BIO_puts(bio_ptr: *mut TABBY_BIO<'_>, buf_ptr: *const c_
     check_inner_result!(inner_tabby_bio_puts(bio_ptr, buf_ptr), -1)
 }
 
-fn inner_tabby_bio_puts(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    buf_ptr: *const c_char,
-) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_bio_puts(bio_ptr: *mut TABBY_BIO<'_>, buf_ptr: *const c_char) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     if !bio.is_initialized() {
         // Mem or file not assigned yet
@@ -416,7 +411,7 @@ fn inner_tabby_bio_puts(
 /// `BIO_s_file()` returns the BIO file method.
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// BIO_METHOD *BIO_s_file(void);
 /// ```
@@ -430,7 +425,7 @@ pub extern "C" fn tabby_BIO_s_file() -> *const TABBY_BIO_METHOD {
 /// returned BIO.
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// BIO *BIO_new_file(const char *filename, const char *mode);
 /// ```
@@ -448,7 +443,7 @@ pub extern "C" fn tabby_BIO_new_file<'a>(
 fn inner_tabby_bio_new_filename<'a>(
     filename_ptr: *const c_char,
     mode_ptr: *const c_char,
-) -> MesalinkInnerResult<*mut TABBY_BIO<'a>> {
+) -> InnerResult<*mut TABBY_BIO<'a>> {
     let file = open_file_from_filename_and_mode(filename_ptr, mode_ptr)?;
     let bio = TABBY_BIO {
         magic: *MAGIC,
@@ -462,7 +457,7 @@ fn inner_tabby_bio_new_filename<'a>(
 fn open_file_from_filename_and_mode(
     filename_ptr: *const c_char,
     mode_ptr: *const c_char,
-) -> MesalinkInnerResult<fs::File> {
+) -> InnerResult<fs::File> {
     if filename_ptr.is_null() || mode_ptr.is_null() {
         return Err(error!(OpensslError::NullPointer.into()));
     }
@@ -492,7 +487,7 @@ fn open_file_from_filename_and_mode(
 /// `BIO_read_filename()` sets the file BIO b to use file name for reading.
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// BIO *BIO_read_file(const char *filename);
 /// ```
@@ -511,7 +506,7 @@ fn inner_tabby_bio_set_filename(
     bio_ptr: *mut TABBY_BIO<'_>,
     filename_ptr: *const c_char,
     mode_ptr: *const c_char,
-) -> MesalinkInnerResult<c_int> {
+) -> InnerResult<c_int> {
     let file = open_file_from_filename_and_mode(filename_ptr, mode_ptr)?;
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     bio.inner = MesalinkBioInner::File(file);
@@ -521,7 +516,7 @@ fn inner_tabby_bio_set_filename(
 /// `BIO_write_filename()` sets the file BIO b to use file name for writing.
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// BIO *BIO_write_file(const char *filename);
 /// ```
@@ -539,7 +534,7 @@ pub extern "C" fn tabby_BIO_write_filename(
 /// `BIO_append_filename()` sets the file BIO b to use file name for appending.
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// BIO *BIO_append_filename(const char *filename);
 /// ```
@@ -558,7 +553,7 @@ pub extern "C" fn tabby_BIO_append_filename(
 /// writing.
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// BIO *BIO_rw_file(const char *filename);
 /// ```
@@ -576,7 +571,7 @@ pub extern "C" fn tabby_BIO_rw_filename(
 /// `BIO_new_fp()` screates a file BIO wrapping `stream`
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// BIO *BIO_new_fp(FILE *stream, int flags);
 /// ```
@@ -591,7 +586,7 @@ pub extern "C" fn tabby_BIO_new_fp<'a>(
 fn inner_tabby_bio_new_fp<'a>(
     stream: *mut libc::FILE,
     flags: c_int,
-) -> MesalinkInnerResult<*mut TABBY_BIO<'a>> {
+) -> InnerResult<*mut TABBY_BIO<'a>> {
     if stream.is_null() {
         return Err(error!(OpensslError::NullPointer.into()));
     }
@@ -609,7 +604,7 @@ fn inner_tabby_bio_new_fp<'a>(
 /// `BIO_set_fp()` sets the fp of a file BIO to `fp`.
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// BIO_set_fp(BIO *b,FILE *fp, int flags);
 /// ```
@@ -622,7 +617,7 @@ fn inner_tabby_bio_set_fp(
     bio_ptr: *mut TABBY_BIO<'_>,
     fp: *mut libc::FILE,
     flags: c_int,
-) -> MesalinkInnerResult<c_int> {
+) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let file = unsafe { fs::File::from_file_stream(fp) };
     let flags = BioFlags::from_bits(flags as u32).ok_or(error!(OpensslError::BadFuncArg.into()))?;
@@ -634,7 +629,7 @@ fn inner_tabby_bio_set_fp(
 /// `BIO_get_close()` returns the BIOs close flag.
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// int BIO_get_close(BIO *b);
 /// ```
@@ -646,7 +641,7 @@ pub extern "C" fn tabby_BIO_get_close(bio_ptr: *mut TABBY_BIO<'_>) -> c_int {
     )
 }
 
-fn inner_tabby_bio_get_close(bio_ptr: *mut TABBY_BIO<'_>) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_bio_get_close(bio_ptr: *mut TABBY_BIO<'_>) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     Ok(bio.flags.bits() as c_int)
 }
@@ -654,7 +649,7 @@ fn inner_tabby_bio_get_close(bio_ptr: *mut TABBY_BIO<'_>) -> MesalinkInnerResult
 /// `BIO_set_close()` sets the BIO *b* close flag to *flag*
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// int BIO_set_close(BIO *b, long flag);
 /// ```
@@ -667,10 +662,7 @@ pub extern "C" fn tabby_BIO_set_close(bio_ptr: *mut TABBY_BIO<'_>, flag: c_long)
     CRYPTO_SUCCESS
 }
 
-fn inner_tabby_bio_set_close(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    flag: c_long,
-) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_bio_set_close(bio_ptr: *mut TABBY_BIO<'_>, flag: c_long) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let flag = BioFlags::from_bits(flag as u32).ok_or(error!(OpensslError::BadFuncArg.into()))?;
     bio.flags = flag;
@@ -680,7 +672,7 @@ fn inner_tabby_bio_set_close(
 /// `BIO_s_file()` returns the BIO memory method.
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// BIO_METHOD *BIO_s_mem(void);
 /// ```
@@ -692,7 +684,7 @@ pub extern "C" fn tabby_BIO_s_mem() -> *const TABBY_BIO_METHOD {
 /// `BIO_new_mem_buf()` creates a memory BIO using `len` bytes of data at `buf`
 ///
 /// ```c
-/// #include <mesalink/openssl/bio.h>
+/// #include <tabbyssl/openssl/bio.h>
 ///
 /// BIO *BIO_new_mem_buf(const void *buf, int len);
 /// ```

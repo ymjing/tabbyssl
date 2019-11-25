@@ -1,6 +1,6 @@
-# Cross compiling MesaLink
+# Cross compiling TabbySSL/MesaLink
 
-MesaLink added CMake support since 1.0.0. It is recommended to use CMake to cross compile MesaLink.
+MesaLink added CMake support since 1.0.0. It is recommended to use CMake to cross compile TabbySSL/MesaLink.
 For example:
 
 ```shell

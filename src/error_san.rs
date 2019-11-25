@@ -8,23 +8,23 @@
  *
  */
 
-use crate::libssl::err::{MesalinkInnerResult, OpensslError};
+use crate::libssl::err::{InnerResult, OpensslError};
 use crate::OpaquePointerGuard;
 
-pub(crate) fn sanitize_const_ptr_for_ref<'a, T>(ptr: *const T) -> MesalinkInnerResult<&'a T>
+pub(crate) fn sanitize_const_ptr_for_ref<'a, T>(ptr: *const T) -> InnerResult<&'a T>
 where
     T: OpaquePointerGuard,
 {
     let ptr = ptr as *mut T;
     sanitize_ptr_for_mut_ref(ptr).map(|r| r as &'a T)
 }
-pub(crate) fn sanitize_ptr_for_ref<'a, T>(ptr: *mut T) -> MesalinkInnerResult<&'a T>
+pub(crate) fn sanitize_ptr_for_ref<'a, T>(ptr: *mut T) -> InnerResult<&'a T>
 where
     T: OpaquePointerGuard,
 {
     sanitize_ptr_for_mut_ref(ptr).map(|r| r as &'a T)
 }
-pub(crate) fn sanitize_ptr_for_mut_ref<'a, T>(ptr: *mut T) -> MesalinkInnerResult<&'a mut T>
+pub(crate) fn sanitize_ptr_for_mut_ref<'a, T>(ptr: *mut T) -> InnerResult<&'a mut T>
 where
     T: OpaquePointerGuard,
 {

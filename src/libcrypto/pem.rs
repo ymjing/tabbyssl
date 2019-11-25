@@ -15,7 +15,7 @@ use crate::error_san::*;
 use crate::libssl::x509::TABBY_X509;
 use libc::c_void;
 //use libcrypto::{CRYPTO_FAILURE, CRYPTO_SUCCESS};
-use crate::libssl::err::{MesalinkInnerResult, OpensslError};
+use crate::libssl::err::{InnerResult, OpensslError};
 use std::io::{Read, Seek};
 use std::{io, ptr};
 
@@ -23,7 +23,7 @@ use std::{io, ptr};
 /// multiple keys in the bio, only the first one is read.
 ///
 /// ```c
-/// #include <mesalink/openssl/pem.h>
+/// #include <tabbyssl/openssl/pem.h>
 ///
 /// EVP_PKEY *PEM_read_bio_PrivateKey(BIO *bio, EVP_PKEY **x,
 ///                                        pem_password_cb *cb, void *u);
@@ -45,7 +45,7 @@ pub extern "C" fn tabby_PEM_read_bio_PrivateKey(
 fn inner_tabby_pem_read_bio_privatekey(
     bio_ptr: *mut TABBY_BIO<'_>,
     pkey_pp: *mut *mut TABBY_EVP_PKEY,
-) -> MesalinkInnerResult<*mut TABBY_EVP_PKEY> {
+) -> InnerResult<*mut TABBY_EVP_PKEY> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let mut buf_reader = io::BufReader::with_capacity(1, bio);
     let key = get_either_rsa_or_ecdsa_private_key(&mut buf_reader)
@@ -66,7 +66,7 @@ fn inner_tabby_pem_read_bio_privatekey(
 /// keys in the file, only the first one is read.
 ///
 /// ```c
-/// #include <mesalink/openssl/pem.h>
+/// #include <tabbyssl/openssl/pem.h>
 ///
 /// EVP_PKEY *PEM_read_PrivateKey(FILE *fp, EVP_PKEY **x,
 ///                                     pem_password_cb *cb, void *u);
@@ -91,7 +91,7 @@ pub extern "C" fn tabby_PEM_read_PrivateKey(
 /// multiple certificates in the bio, only the first one is read.
 ///
 /// ```c
-/// #include <mesalink/openssl/pem.h>
+/// #include <tabbyssl/openssl/pem.h>
 ///
 /// X509 *PEM_read_bio_X509(BIO *bio, X509 **x, pem_password_cb *cb, void *u);
 /// ```
@@ -111,7 +111,7 @@ pub extern "C" fn tabby_PEM_read_bio_X509(
 fn inner_tabby_pem_read_bio_x509(
     bio_ptr: *mut TABBY_BIO<'_>,
     x509_pp: *mut *mut TABBY_X509,
-) -> MesalinkInnerResult<*mut TABBY_X509> {
+) -> InnerResult<*mut TABBY_X509> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let mut buf_reader = io::BufReader::with_capacity(1, bio);
     let cert =
@@ -130,7 +130,7 @@ fn inner_tabby_pem_read_bio_x509(
 /// `PEM_read_X509` reads a X509 certificate from *file*.
 ///
 /// ```c
-/// #include <mesalink/openssl/pem.h>
+/// #include <tabbyssl/openssl/pem.h>
 ///
 /// X509 *PEM_read_X509(FILE *fp, X509 **x, pem_password_cb *cb, void *u);
 /// ```

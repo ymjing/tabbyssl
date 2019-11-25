@@ -8,7 +8,7 @@
  *
  */
 
-use super::err::{MesalinkInnerResult, OpensslError};
+use super::err::{InnerResult, OpensslError};
 use super::safestack::TABBY_STACK_TABBY_X509_NAME;
 use super::{SSL_FAILURE, SSL_SUCCESS};
 use crate::error_san::*;
@@ -73,7 +73,7 @@ impl TABBY_X509 {
 /// `X509_free` - free up a X509 structure. If a is NULL nothing is done.
 ///
 /// ```c
-/// #include <mesalink/openssl/x509.h>
+/// #include <tabbyssl/openssl/x509.h>
 ///
 /// void X509_free(X509 *a);
 /// ```
@@ -82,7 +82,7 @@ pub extern "C" fn tabby_X509_free(x509_ptr: *mut TABBY_X509) {
     let _ = check_inner_result!(inner_tabby_x509_free(x509_ptr), SSL_FAILURE);
 }
 
-fn inner_tabby_x509_free(x509_ptr: *mut TABBY_X509) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_x509_free(x509_ptr: *mut TABBY_X509) -> InnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(x509_ptr)?;
     let _ = unsafe { Box::from_raw(x509_ptr) };
     Ok(SSL_SUCCESS)
@@ -115,7 +115,7 @@ impl<'a> TABBY_X509_NAME {
 /// done.
 ///
 /// ```c
-/// #include <mesalink/openssl/x509.h>
+/// #include <tabbyssl/openssl/x509.h>
 ///
 /// void X509_free(X509 *a);
 /// ```
@@ -124,7 +124,7 @@ pub extern "C" fn tabby_X509_NAME_free(x509_name_ptr: *mut TABBY_X509_NAME) {
     let _ = check_inner_result!(inner_tabby_x509_name_free(x509_name_ptr), SSL_FAILURE);
 }
 
-fn inner_tabby_x509_name_free(x509_name_ptr: *mut TABBY_X509_NAME) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_x509_name_free(x509_name_ptr: *mut TABBY_X509_NAME) -> InnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(x509_name_ptr)?;
     let _ = unsafe { Box::from_raw(x509_name_ptr) };
     Ok(SSL_SUCCESS)
@@ -135,7 +135,7 @@ fn inner_tabby_x509_name_free(x509_name_ptr: *mut TABBY_X509_NAME) -> MesalinkIn
 /// `sk_X509_NAME_free`.
 ///
 /// ```c
-/// #include <mesalink/openssl/x509.h>
+/// #include <tabbyssl/openssl/x509.h>
 ///
 /// STACK_OF(X509_NAME) *X509_get_alt_subject_names(const X509 *x);;
 /// ```
@@ -151,7 +151,7 @@ pub extern "C" fn tabby_X509_get_alt_subject_names(
 
 fn inner_tabby_x509_get_alt_subject_names(
     x509_ptr: *mut TABBY_X509,
-) -> MesalinkInnerResult<*mut TABBY_STACK_TABBY_X509_NAME> {
+) -> InnerResult<*mut TABBY_STACK_TABBY_X509_NAME> {
     let cert = sanitize_ptr_for_ref(x509_ptr)?;
     let x509 = webpki::EndEntityCert::from(&cert.inner.0)
         .map_err(|e| error!(rustls::TLSError::WebPKIError(e).into()))?;
@@ -177,7 +177,7 @@ fn inner_tabby_x509_get_alt_subject_names(
 /// by `X509_NAME_free`.
 ///
 /// ```c
-/// #include <mesalink/openssl/x509.h>
+/// #include <tabbyssl/openssl/x509.h>
 ///
 /// X509_NAME *X509_get_subject(const X509 *x);;
 /// ```
@@ -186,9 +186,7 @@ pub extern "C" fn tabby_X509_get_subject(x509_ptr: *mut TABBY_X509) -> *mut TABB
     check_inner_result!(inner_tabby_x509_get_subject(x509_ptr), ptr::null_mut())
 }
 
-fn inner_tabby_x509_get_subject(
-    x509_ptr: *mut TABBY_X509,
-) -> MesalinkInnerResult<*mut TABBY_X509_NAME> {
+fn inner_tabby_x509_get_subject(x509_ptr: *mut TABBY_X509) -> InnerResult<*mut TABBY_X509_NAME> {
     let cert = sanitize_ptr_for_ref(x509_ptr)?;
     let x509 = webpki::EndEntityCert::from(&cert.inner.0)
         .map_err(|e| error!(rustls::TLSError::WebPKIError(e).into()))?;
@@ -226,7 +224,7 @@ fn inner_tabby_x509_get_subject(
 /// by `X509_NAME_free`.
 ///
 /// ```c
-/// #include <mesalink/openssl/x509.h>
+/// #include <tabbyssl/openssl/x509.h>
 ///
 /// X509_NAME *X509_get_subject_name(const X509 *x);;
 /// ```
@@ -237,7 +235,7 @@ pub extern "C" fn tabby_X509_get_subject_name(x509_ptr: *mut TABBY_X509) -> *mut
 
 fn inner_tabby_x509_get_subject_name(
     x509_ptr: *mut TABBY_X509,
-) -> MesalinkInnerResult<*mut TABBY_X509_NAME> {
+) -> InnerResult<*mut TABBY_X509_NAME> {
     let cert = sanitize_ptr_for_ref(x509_ptr)?;
     let x509 = webpki::EndEntityCert::from(&cert.inner.0)
         .map_err(|e| error!(rustls::TLSError::WebPKIError(e).into()))?;
@@ -301,7 +299,7 @@ fn inner_tabby_x509_get_subject_name(
 /// and buf is returned.
 ///
 /// ```c
-/// #include <mesalink/openssl/x509.h>
+/// #include <tabbyssl/openssl/x509.h>
 ///
 /// char * X509_NAME_oneline(X509_NAME *a,char *buf,int size);
 /// ```
@@ -321,7 +319,7 @@ fn inner_tabby_x509_name_oneline(
     x509_name_ptr: *mut TABBY_X509_NAME,
     buf_ptr: *mut c_char,
     buf_len: c_int,
-) -> MesalinkInnerResult<*mut c_char> {
+) -> InnerResult<*mut c_char> {
     let x509_name = sanitize_ptr_for_ref(x509_name_ptr)?;
     let buf_len: usize = buf_len as usize;
     unsafe {

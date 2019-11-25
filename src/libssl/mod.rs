@@ -9,20 +9,20 @@
  */
 
 /// Implementations of OpenSSL ERR APIs.
-/// Please also refer to the header file at mesalink/openssl/err.h
+/// Please also refer to the header file at tabbyssl/openssl/err.h
 #[macro_use]
 pub mod err;
 
 /// Implementations of OpenSSL SSL APIs.
-/// Please also refer to the header file at mesalink/openssl/ssl.h
+/// Please also refer to the header file at tabbyssl/openssl/ssl.h
 pub mod ssl;
 
 /// Implementations of OpenSSL X509 APIs.
-/// Please also refer to the header file at mesalink/openssl/x509.h
+/// Please also refer to the header file at tabbyssl/openssl/x509.h
 pub mod x509;
 
 /// Implementations of OpenSSL STACK APIs.
-/// Please also refer to the header file at mesalink/openssl/safestack.h
+/// Please also refer to the header file at tabbyssl/openssl/safestack.h
 pub mod safestack;
 
 /// This module is essentially the same as the SessionCache implementations from

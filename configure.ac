@@ -172,10 +172,10 @@ make clean >/dev/null 2>&1
 OPTION_FILE="tabbyssl/options.h"
 rm -f $OPTION_FILE
 
-echo "/* MesaLink options.h" > $OPTION_FILE
+echo "/* TabbySSL options.h" > $OPTION_FILE
 echo " * generated from configure options" >> $OPTION_FILE
 echo " *" >> $OPTION_FILE
-echo " * This file is part of MesaLink. " >> $OPTION_FILE
+echo " * This file is part of TabbySSL. " >> $OPTION_FILE
 echo " *" >> $OPTION_FILE
 echo " */" >> $OPTION_FILE
 

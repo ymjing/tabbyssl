@@ -28,8 +28,7 @@ macro_rules! call_site {
 #[macro_export]
 macro_rules! error {
     ($code:expr) => {{
-        use crate::libssl::err::MesalinkError;
-        MesalinkError::new($code, call_site!())
+        crate::libssl::err::Error::new($code, call_site!())
     }};
 }
 // A utility macro that wraps each inner API implementation and checks its
