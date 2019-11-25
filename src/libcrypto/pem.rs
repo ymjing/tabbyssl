@@ -9,10 +9,10 @@
  */
 
 use super::bio;
-use super::bio::MESALINK_BIO;
-use super::evp::MESALINK_EVP_PKEY;
+use super::bio::TABBY_BIO;
+use super::evp::TABBY_EVP_PKEY;
 use crate::error_san::*;
-use crate::libssl::x509::MESALINK_X509;
+use crate::libssl::x509::TABBY_X509;
 use libc::c_void;
 //use libcrypto::{CRYPTO_FAILURE, CRYPTO_SUCCESS};
 use crate::libssl::err::{MesalinkBuiltinError, MesalinkInnerResult};
@@ -31,11 +31,11 @@ use std::{io, ptr};
 ///
 #[no_mangle]
 pub extern "C" fn mesalink_PEM_read_bio_PrivateKey(
-    bio_ptr: *mut MESALINK_BIO<'_>,
-    pkey_pp: *mut *mut MESALINK_EVP_PKEY,
+    bio_ptr: *mut TABBY_BIO<'_>,
+    pkey_pp: *mut *mut TABBY_EVP_PKEY,
     _cb: *mut c_void,
     _u: *mut c_void,
-) -> *mut MESALINK_EVP_PKEY {
+) -> *mut TABBY_EVP_PKEY {
     check_inner_result!(
         inner_mesalink_pem_read_bio_privatekey(bio_ptr, pkey_pp),
         ptr::null_mut()
@@ -43,15 +43,15 @@ pub extern "C" fn mesalink_PEM_read_bio_PrivateKey(
 }
 
 fn inner_mesalink_pem_read_bio_privatekey(
-    bio_ptr: *mut MESALINK_BIO<'_>,
-    pkey_pp: *mut *mut MESALINK_EVP_PKEY,
-) -> MesalinkInnerResult<*mut MESALINK_EVP_PKEY> {
+    bio_ptr: *mut TABBY_BIO<'_>,
+    pkey_pp: *mut *mut TABBY_EVP_PKEY,
+) -> MesalinkInnerResult<*mut TABBY_EVP_PKEY> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let mut buf_reader = io::BufReader::with_capacity(1, bio);
     let key = get_either_rsa_or_ecdsa_private_key(&mut buf_reader)
         .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
-    let pkey = MESALINK_EVP_PKEY::new(key);
-    let pkey_ptr = Box::into_raw(Box::new(pkey)) as *mut MESALINK_EVP_PKEY;
+    let pkey = TABBY_EVP_PKEY::new(key);
+    let pkey_ptr = Box::into_raw(Box::new(pkey)) as *mut TABBY_EVP_PKEY;
 
     if !pkey_pp.is_null() {
         unsafe {
@@ -74,10 +74,10 @@ fn inner_mesalink_pem_read_bio_privatekey(
 #[no_mangle]
 pub extern "C" fn mesalink_PEM_read_PrivateKey(
     file_ptr: *mut libc::FILE,
-    pkey_pp: *mut *mut MESALINK_EVP_PKEY,
+    pkey_pp: *mut *mut TABBY_EVP_PKEY,
     _cb: *mut c_void,
     _u: *mut c_void,
-) -> *mut MESALINK_EVP_PKEY {
+) -> *mut TABBY_EVP_PKEY {
     let bio_ptr = bio::mesalink_BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
     let ret = check_inner_result!(
         inner_mesalink_pem_read_bio_privatekey(bio_ptr, pkey_pp),
@@ -97,11 +97,11 @@ pub extern "C" fn mesalink_PEM_read_PrivateKey(
 /// ```
 #[no_mangle]
 pub extern "C" fn mesalink_PEM_read_bio_X509(
-    bio_ptr: *mut MESALINK_BIO<'_>,
-    x509_pp: *mut *mut MESALINK_X509,
+    bio_ptr: *mut TABBY_BIO<'_>,
+    x509_pp: *mut *mut TABBY_X509,
     _cb: *mut c_void,
     _u: *mut c_void,
-) -> *mut MESALINK_X509 {
+) -> *mut TABBY_X509 {
     check_inner_result!(
         inner_mesalink_pem_read_bio_x509(bio_ptr, x509_pp),
         ptr::null_mut()
@@ -109,15 +109,15 @@ pub extern "C" fn mesalink_PEM_read_bio_X509(
 }
 
 fn inner_mesalink_pem_read_bio_x509(
-    bio_ptr: *mut MESALINK_BIO<'_>,
-    x509_pp: *mut *mut MESALINK_X509,
-) -> MesalinkInnerResult<*mut MESALINK_X509> {
+    bio_ptr: *mut TABBY_BIO<'_>,
+    x509_pp: *mut *mut TABBY_X509,
+) -> MesalinkInnerResult<*mut TABBY_X509> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let mut buf_reader = io::BufReader::with_capacity(1, bio);
     let cert = get_certificate(&mut buf_reader)
         .map_err(|_| error!(MesalinkBuiltinError::BadFuncArg.into()))?;
-    let x509 = MESALINK_X509::new(cert);
-    let x509_ptr = Box::into_raw(Box::new(x509)) as *mut MESALINK_X509;
+    let x509 = TABBY_X509::new(cert);
+    let x509_ptr = Box::into_raw(Box::new(x509)) as *mut TABBY_X509;
     if !x509_pp.is_null() {
         unsafe {
             let p = &mut *x509_pp;
@@ -137,10 +137,10 @@ fn inner_mesalink_pem_read_bio_x509(
 #[no_mangle]
 pub extern "C" fn mesalink_PEM_read_X509(
     file_ptr: *mut libc::FILE,
-    x509_pp: *mut *mut MESALINK_X509,
+    x509_pp: *mut *mut TABBY_X509,
     _cb: *mut c_void,
     _u: *mut c_void,
-) -> *mut MESALINK_X509 {
+) -> *mut TABBY_X509 {
     let bio_ptr = bio::mesalink_BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
     let ret = check_inner_result!(
         inner_mesalink_pem_read_bio_x509(bio_ptr, x509_pp),
