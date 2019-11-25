@@ -8,37 +8,18 @@
  *
  */
 
-//! # MesaLink: A safe, secure and OpenSSL-compatible TLS library
+//! # TabbySSL - OpenSSL compatibility layer for the Rust SSL/TLS stack
 //!
-//! Mesalink is a OpenSSL-compatible TLS library written in Rust, a programming
-//! language that guaranteed memory safety and thread safety.
+//! Previously [MesaLink](https://mesalink.io), TabbySSL is an OpenSSL
+//! compatibility layer for the Rust SSL/TLS stack.
 //!
-//! ## Feature highlights
+//! TabbySSL depends on [rustls](https://github.com/ctz/rustls) and provides the
+//! following features through OpenSSL compatible C APIs.
 //!
-//!  * **Memory safety**. MesaLink and its dependencies are written in
-//!    [Rust](https://www.rust-lang.org), a programming language that guarantees
-//!    memory safety. This extremely reduces attack surfaces of an TLS stack
-//!    exposed in the wild, leaving the remaining attack surfaces auditable and
-//!    restricted.
-//!  * **Flexibility**. MesaLink offers flexible configurations tailored to
-//!    various needs, for example IoT, connected home, automobiles, the cloud
-//!    and more.
-//!  * **Simplicity**. MesaLink does not support obselete or legacy TLS
-//!    features, in case that misconfigurations introduce vulnerabilities.
-//!  * **Compatibility**. MesaLink provides OpenSSL-compatible APIs. This makes
-//!    it a breeze to port an existing OpenSSL project.
-//!  * **Future proof**. MesaLink will support quantum-safe ciphersuites,
-//!    safe-guarding TLS connections against even quantum computers.
-//!
-//! MesaLink depends on two Rust crates: [rustls](https://github.com/ctz/rustls)
-//! and [sct](https://github.com/ctz/sct.rs). With them, MesaLink provides the
-//! following features that are considered secure for most use cases:
-//!
-//! * TLS 1.2 and TLS 1.3 draft 23
+//! * TLS 1.2 and 1.3
 //! * ECDSA or RSA server authentication
-//! * Forced hostname validation
 //! * Forward secrecy using ECDHE; with curve25519, nistp256 or nistp384 curves.
-//! * Safe and fast crypto primitives from BoringSSL
+//! * Safe and fast crypto primitives from ring/BoringSSL
 //! * AES-128-GCM, AES-256-GCM and Chacha20-Poly1305 bulk encryption
 //! * Built-in Mozilla's CA root certificates
 //!

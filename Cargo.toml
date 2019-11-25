@@ -26,7 +26,7 @@ verifier = ["rustls/dangerous_configuration"]
 jemalloc_allocator = ["jemallocator"]
 
 [dependencies]
-rustls = { git = "https://github.com/ctz/rustls", default-features = false }
+rustls = { git = "https://github.com/ctz/rustls", version = "0.16.0", default-features = false }
 ring = "0.16.9"
 webpki = "0.21.0"
 webpki-roots = "0.18.0"
