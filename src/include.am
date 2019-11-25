@@ -1,14 +1,14 @@
-lib_LTLIBRARIES+= libmesalink.la
+lib_LTLIBRARIES+= libtabbyssl.la
 
-RUST_LIB=@abs_top_builddir@/target/@CARGO_TARGET_SUBDIR@/libmesalink.la
+RUST_LIB=@abs_top_builddir@/target/@CARGO_TARGET_SUBDIR@/libtabbyssl.la
 
-$(RUST_LIB): Cargo.toml src/lib.rs src/error_san.rs src/macros.rs src/libssl/mod.rs src/libssl/ssl.rs src/libssl/err.rs src/libssl/x509.rs src/libssl/safestack.rs src/libssl/sgx.rs src/libssl/cache.rs src/libcrypto/mod.rs src/libcrypto/bio.rs src/libcrypto/evp.rs src/libcrypto/pem.rs
+$(RUST_LIB): Cargo.toml src/lib.rs src/error_san.rs src/macros.rs src/libssl/mod.rs src/libssl/ssl.rs src/libssl/err.rs src/libssl/x509.rs src/libssl/safestack.rs src/libssl/cache.rs src/libcrypto/mod.rs src/libcrypto/bio.rs src/libcrypto/evp.rs src/libcrypto/pem.rs
 	cd $(top_srcdir) && \
 	$(CARGO_TARGET_SUBDIR_ENV_VAR) cargo rustc \
 		$(CARGO_RELEASE_ARGS) --no-default-features $(CARGO_FEATURES) $(CARGO_TARGET_ARGS) $(CARGO_RUSTC_ARGS) && \
 	(ar d @abs_top_builddir@/target/@CARGO_TARGET_SUBDIR@/libmesalink.a floatdisf.o clzsi2.o || true)
 
-TABBY_LIBRARY_VERSION = @TABBY_LIBRARY_VERSION@
+TABBYSSL_LIBRARY_VERSION = @TABBYSSL_LIBRARY_VERSION@
 
 libtabbyssl_la_SOURCES = \
 	$(NULL)
@@ -17,11 +17,11 @@ libtabbyssl_la_CFLAGS = \
 libtabbyssl_la_LDFLAGS = \
 	-export-dynamic \
 	-no-undefined \
-	-version-info ${TABBY_LIBRARY_VERSION} \
+	-version-info ${TABBYSSL_LIBRARY_VERSION} \
 	-export-symbols-regex "^tabby_.*" \
 	$(LT_LINKER_ARGS) \
 	$(AM_LDFLAGS)
-libtabbysslssl_la_LIBADD = \
+libtabbyssl_la_LIBADD = \
 	$(RUST_LIB)
 
 clean-local:

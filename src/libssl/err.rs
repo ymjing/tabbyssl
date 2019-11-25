@@ -354,6 +354,7 @@ pub enum ErrorCode {
     TLSErrorInvalidDNSName = 0x0300_0e00,
     TLSErrorHandshakeNotComplete = 0x0300_0f00,
     TLSErrorPeerSentOversizedRecord = 0x0300_1000,
+    TLSErrorNoApplicationProtocol = 0x0300_1100,
     UndefinedError = 0x0eee_eeee,
 }
 
@@ -540,6 +541,7 @@ impl<'a> From<&'a MesalinkError> for ErrorCode {
                 _ => ErrorCode::UndefinedError,
             },
             MesalinkErrorType::Tls(ref e) => match *e {
+                TLSError::NoApplicationProtocol => ErrorCode::TLSErrorNoApplicationProtocol,
                 TLSError::InappropriateMessage {
                     ref expect_types,
                     ref got_type,

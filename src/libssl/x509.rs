@@ -34,6 +34,32 @@ impl OpaquePointerGuard for TABBY_X509 {
     }
 }
 
+#[allow(unused)]
+enum EndEntityOrCA<'a> {
+    CA(&'a Cert<'a>),
+}
+
+#[allow(unused)]
+struct SignedData<'a> {
+    data: untrusted::Input<'a>,
+    algorithm: untrusted::Input<'a>,
+    signature: untrusted::Input<'a>,
+}
+
+#[allow(unused)]
+struct Cert<'a> {
+    pub ee_or_ca: EndEntityOrCA<'a>,
+    pub signed_data: SignedData<'a>,
+    pub issuer: untrusted::Input<'a>,
+    pub validity: untrusted::Input<'a>,
+    pub subject: untrusted::Input<'a>,
+    pub spki: untrusted::Input<'a>,
+    pub basic_constraints: Option<untrusted::Input<'a>>,
+    pub eku: Option<untrusted::Input<'a>>,
+    pub name_constraints: Option<untrusted::Input<'a>>,
+    pub subject_alt_name: Option<untrusted::Input<'a>>,
+}
+
 #[doc(hidden)]
 impl TABBY_X509 {
     pub(crate) fn new(cert: rustls::Certificate) -> TABBY_X509 {
@@ -98,9 +124,7 @@ pub extern "C" fn tabby_X509_NAME_free(x509_name_ptr: *mut TABBY_X509_NAME) {
     let _ = check_inner_result!(inner_tabby_x509_name_free(x509_name_ptr), SSL_FAILURE);
 }
 
-fn inner_tabby_x509_name_free(
-    x509_name_ptr: *mut TABBY_X509_NAME,
-) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_x509_name_free(x509_name_ptr: *mut TABBY_X509_NAME) -> MesalinkInnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(x509_name_ptr)?;
     let _ = unsafe { Box::from_raw(x509_name_ptr) };
     Ok(SSL_SUCCESS)
@@ -131,8 +155,8 @@ fn inner_tabby_x509_get_alt_subject_names(
     let cert = sanitize_ptr_for_ref(x509_ptr)?;
     let x509 = webpki::EndEntityCert::from(&cert.inner.0)
         .map_err(|e| error!(rustls::TLSError::WebPKIError(e).into()))?;
-    let subject_alt_name = x509
-        .inner
+    let cert: Cert = unsafe { std::mem::transmute(x509) };
+    let subject_alt_name = cert
         .subject_alt_name
         .ok_or(error!(MesalinkBuiltinError::BadFuncArg.into()))?;
     let mut reader = untrusted::Reader::new(subject_alt_name);
@@ -158,9 +182,7 @@ fn inner_tabby_x509_get_alt_subject_names(
 /// X509_NAME *X509_get_subject(const X509 *x);;
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_X509_get_subject(
-    x509_ptr: *mut TABBY_X509,
-) -> *mut TABBY_X509_NAME {
+pub extern "C" fn tabby_X509_get_subject(x509_ptr: *mut TABBY_X509) -> *mut TABBY_X509_NAME {
     check_inner_result!(inner_tabby_x509_get_subject(x509_ptr), ptr::null_mut())
 }
 
@@ -170,7 +192,9 @@ fn inner_tabby_x509_get_subject(
     let cert = sanitize_ptr_for_ref(x509_ptr)?;
     let x509 = webpki::EndEntityCert::from(&cert.inner.0)
         .map_err(|e| error!(rustls::TLSError::WebPKIError(e).into()))?;
-    let subject = x509.inner.subject.as_slice_less_safe();
+
+    let cert: Cert = unsafe { std::mem::transmute(x509) };
+    let subject = cert.subject.as_slice_less_safe();
     let subject_len = subject.len();
     let mut value = Vec::new();
     if subject_len <= 127 {
@@ -207,13 +231,8 @@ fn inner_tabby_x509_get_subject(
 /// X509_NAME *X509_get_subject_name(const X509 *x);;
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_X509_get_subject_name(
-    x509_ptr: *mut TABBY_X509,
-) -> *mut TABBY_X509_NAME {
-    check_inner_result!(
-        inner_tabby_x509_get_subject_name(x509_ptr),
-        ptr::null_mut()
-    )
+pub extern "C" fn tabby_X509_get_subject_name(x509_ptr: *mut TABBY_X509) -> *mut TABBY_X509_NAME {
+    check_inner_result!(inner_tabby_x509_get_subject_name(x509_ptr), ptr::null_mut())
 }
 
 fn inner_tabby_x509_get_subject_name(
@@ -225,8 +244,8 @@ fn inner_tabby_x509_get_subject_name(
 
     let mut subject_name = String::new();
 
-    let _ = x509
-        .inner
+    let cert: Cert = unsafe { std::mem::transmute(x509) };
+    let _ = cert
         .subject
         .read_all(error!(MesalinkBuiltinError::BadFuncArg.into()), |subject| {
             while !subject.at_end() {

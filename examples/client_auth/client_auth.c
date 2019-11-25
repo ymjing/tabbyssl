@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2019, Yiming Jing
+ * Copyright (c) 2017-2019, The MesaLink Authors
+ * All rights reserved.
+ *
+ * This work is licensed under the terms of the BSD 3-Clause License.
+ * For a copy, see the LICENSE file.
+ *
+ */
+
 #include <fcntl.h>
 #include <tabbyssl/openssl/err.h>
 #include <tabbyssl/openssl/ssl.h>

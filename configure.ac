@@ -146,84 +146,6 @@ else
     CONFIG_OPTIONS="$CONFIG_OPTIONS NO_ERROR_STRINGS"
 fi
 
-AC_ARG_ENABLE([aesgcm],
-    [AS_HELP_STRING([--enable-aesgcm], [Enable AES-GCM bulk encryption (default: enabled)])],
-    [ ENABLE_AESGCM=$enableval ],
-    [ ENABLE_AESGCM=yes ]
-    )
-if test "$ENABLE_AESGCM" = "yes"
-then
-    CARGO_FEATURES=$CARGO_FEATURES" aesgcm"
-    CONFIG_OPTIONS="$CONFIG_OPTIONS HAVE_AESGCM"
-else
-    CONFIG_OPTIONS="$CONFIG_OPTIONS NO_AESGCM"
-fi
-
-AC_ARG_ENABLE([chachapoly],
-    [AS_HELP_STRING([--enable-chachapoly], [Enable Chacha20Poly1305 bulk encryption (default: enabled)])],
-    [ ENABLE_CHACHAPOLY=$enableval ],
-    [ ENABLE_CHACHAPOLY=yes ]
-    )
-if test "$ENABLE_CHACHAPOLY" = "yes"
-then
-    CARGO_FEATURES=$CARGO_FEATURES" chachapoly"
-    CONFIG_OPTIONS="$CONFIG_OPTIONS HAVE_CHACHAPOLY"
-else
-    CONFIG_OPTIONS="$CONFIG_OPTIONS NO_CHACHAPOLY"
-fi
-
-AC_ARG_ENABLE([tls13],
-    [AS_HELP_STRING([--enable-tls13], [Enable TLS 1.3 draft (default: enabled)])],
-    [ ENABLE_TLS13=$enableval ],
-    [ ENABLE_TLS13=yes ]
-    )
-if test "$ENABLE_TLS13" = "yes"
-then
-    CARGO_FEATURES=$CARGO_FEATURES" tls13"
-    CONFIG_OPTIONS="$CONFIG_OPTIONS HAVE_TLS13"
-else
-    CONFIG_OPTIONS="$CONFIG_OPTIONS NO_TLS13"
-fi
-
-AC_ARG_ENABLE([x25519],
-    [AS_HELP_STRING([--enable-x25519], [Enable Curve25519 for key exchange (default: enabled)])],
-    [ ENABLE_X25519=$enableval ],
-    [ ENABLE_X25519=yes ]
-    )
-if test "$ENABLE_X25519" = "yes"
-then
-    CARGO_FEATURES=$CARGO_FEATURES" x25519"
-    CONFIG_OPTIONS="$CONFIG_OPTIONS HAVE_X25519"
-else
-    CONFIG_OPTIONS="$CONFIG_OPTIONS NO_X25519"
-fi
-
-AC_ARG_ENABLE([ecdh],
-    [AS_HELP_STRING([--enable-ecdh], [Enable curve secp256r1 and secp384r1 for key exchange (default: enabled)])],
-    [ ENABLE_ECDH=$enableval ],
-    [ ENABLE_ECDH=yes ]
-    )
-if test "$ENABLE_ECDH" = "yes"
-then
-    CARGO_FEATURES=$CARGO_FEATURES" ecdh"
-    CONFIG_OPTIONS="$CONFIG_OPTIONS HAVE_ECDH"
-else
-    CONFIG_OPTIONS="$CONFIG_OPTIONS NO_ECDH"
-fi
-
-AC_ARG_ENABLE([ecdsa],
-    [AS_HELP_STRING([--enable-ecdsa], [Enable curve secp256r1 and secp384r1 for signature verification (default: enabled)])],
-    [ ENABLE_ECDSA=$enableval ],
-    [ ENABLE_ECDSA=yes ]
-    )
-if test "$ENABLE_ECDSA" = "yes"
-then
-    CARGO_FEATURES=$CARGO_FEATURES" ecdsa"
-    CONFIG_OPTIONS="$CONFIG_OPTIONS HAVE_ECDSA"
-else
-    CONFIG_OPTIONS="$CONFIG_OPTIONS NO_ECDSA"
-fi
-
 CARGO_FEATURES=$CARGO_FEATURES" verifier"
 CARGO_FEATURES=$CARGO_FEATURES"\""
 
@@ -234,7 +156,6 @@ AC_ARG_ENABLE([examples],
     )
 AM_CONDITIONAL([BUILD_EXAMPLE_CLIENT], [test "x$ENABLE_EXAMPLES" = "xyes"])
 AM_CONDITIONAL([BUILD_EXAMPLE_SERVER], [test "x$ENABLE_EXAMPLES" = "xyes"])
-AM_CONDITIONAL([BUILD_EXAMPLE_SGX], [[test "x$ENABLE_EXAMPLES" = "xyes"] && [test "x$ENABLE_SGX" = "xyes"]])
 
 AX_CREATE_GENERIC_CONFIG
 

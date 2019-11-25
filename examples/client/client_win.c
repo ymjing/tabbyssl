@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2019, Yiming Jing
+ * Copyright (c) 2017-2019, The MesaLink Authors
+ * All rights reserved.
+ *
+ * This work is licensed under the terms of the BSD 3-Clause License.
+ * For a copy, see the LICENSE file.
+ *
+ */
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
