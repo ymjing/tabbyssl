@@ -4,7 +4,7 @@
 [![Build Status](https://travis-ci.com/ymjing/tabbyssl.svg?branch=master)](https://travis-ci.com/ymjing/tabbyssl)
 [![Build Status](https://dev.azure.com/tabbyssl/TabbySSL/_apis/build/status/ymjing.tabbyssl?branchName=master)](https://dev.azure.com/tabbyssl/TabbySSL/_build/latest?definitionId=1&branchName=master)
 [![Coverage Status](https://codecov.io/gh/ymjing/tabbyssl/branch/master/graph/badge.svg)](https://codecov.io/gh/ymjing/tabbyssl)
-[![Release](https://img.shields.io/github/release/mesalock-linux/tabbyssl.svg)](https://github.com/mesalock-linux/tabbyssl/releases)
+[![Release](https://img.shields.io/github/release/ymjing/tabbyssl.svg)](https://github.com/ymjing/tabbyssl/releases)
 [![License](https://img.shields.io/badge/license-BSD-blue.svg)](LICENSE)
 
 Previously [MesaLink](https://mesalink.io), **TabbySSL** is an OpenSSL compatibility
@@ -33,7 +33,7 @@ layer for the Rust SSL/TLS stack.
 $ sudo apt-get install m4 autoconf automake libtool make gcc curl
 $ curl https://sh.rustup.rs -sSf | sh
 
-$ git clone https://github.com/mesalock-linux/tabbyssl.git
+$ git clone https://github.com/ymjing/tabbyssl.git
 $ ./autogen.sh --enable-examples
 $ make
 ```
@@ -44,7 +44,7 @@ $ make
 $ sudo apt-get install cmake make gcc curl
 $ curl https://sh.rustup.rs -sSf | sh
 
-$ git clone https://github.com/mesalock-linux/tabbyssl.git
+$ git clone https://github.com/ymjing/tabbyssl.git
 $ mkdir build && cd build
 $ cmake ..
 $ cmake --build .
