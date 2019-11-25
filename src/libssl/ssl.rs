@@ -2864,13 +2864,13 @@ mod tests {
 
     #[test]
     fn ssl_on_nonblocking_socket() {
-        let sock = net::TcpStream::connect("yimingjing.com:443").expect("Conenction failed");
+        let sock = net::TcpStream::connect("mesalink.io:443").expect("Conenction failed");
         assert_eq!(true, sock.set_nonblocking(true).is_ok());
         let ctx = tabby_SSL_CTX_new(tabby_SSLv23_client_method());
         let ssl = tabby_SSL_new(ctx);
         assert_eq!(
             SSL_SUCCESS,
-            tabby_SSL_set_tlsext_host_name(ssl, b"yimingjing.com\0".as_ptr() as *const c_char)
+            tabby_SSL_set_tlsext_host_name(ssl, b"mesalink.io\0".as_ptr() as *const c_char)
         );
         assert_eq!(SSL_SUCCESS, tabby_SSL_set_fd(ssl, sock.as_raw_fd()));
         assert_eq!(SSL_SUCCESS, tabby_SSL_connect0(ssl));
@@ -3343,9 +3343,9 @@ mod tests {
     }
 
     #[test]
-    fn early_data_to_yimingjing_com() {
+    fn early_data_to_cloudflare() {
         const HTTP_REQUEST: &[u8; 83] = b"GET / HTTP/1.1\r\n\
-            Host: yimingjing.com\r\n\
+            Host: mesalink.io\r\n\
             Connection: close\r\n\
             Accept-Encoding: identity\r\n\
             \r\n";
@@ -3361,10 +3361,10 @@ mod tests {
             assert_ne!(ssl, ptr::null_mut(), "SSL is null");
             assert_eq!(
                 SSL_SUCCESS,
-                tabby_SSL_set_tlsext_host_name(ssl, b"yimingjing.com\0".as_ptr() as *const c_char),
+                tabby_SSL_set_tlsext_host_name(ssl, b"mesalink.io\0".as_ptr() as *const c_char),
                 "Failed to set SNI"
             );
-            let sock = net::TcpStream::connect("yimingjing.com:443").expect("Failed to connect");
+            let sock = net::TcpStream::connect("mesalink.io:443").expect("Failed to connect");
             assert_eq!(SSL_SUCCESS, tabby_SSL_set_fd(ssl, sock.as_raw_fd()),);
 
             let early_written_len_ptr = Box::into_raw(Box::new(0));

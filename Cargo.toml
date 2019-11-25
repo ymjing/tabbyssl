@@ -27,7 +27,7 @@ jemalloc_allocator = ["jemallocator"]
 
 [dependencies]
 rustls = { git = "https://github.com/ctz/rustls", default-features = false }
-ring = "0.16.5"
+ring = "0.16.9"
 webpki = "0.21.0"
 webpki-roots = "0.18.0"
 sct = "0.6.0"
