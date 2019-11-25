@@ -46,11 +46,11 @@ impl TABBY_EVP_PKEY {
 /// int EVP_PKEY_free(EVP_PKEY *p);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_EVP_PKEY_free(pkey_ptr: *mut TABBY_EVP_PKEY) {
-    let _ = check_inner_result!(inner_mesalink_evp_pkey_free(pkey_ptr), CRYPTO_FAILURE);
+pub extern "C" fn tabby_EVP_PKEY_free(pkey_ptr: *mut TABBY_EVP_PKEY) {
+    let _ = check_inner_result!(inner_tabby_evp_pkey_free(pkey_ptr), CRYPTO_FAILURE);
 }
 
-fn inner_mesalink_evp_pkey_free(pkey_ptr: *mut TABBY_EVP_PKEY) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_evp_pkey_free(pkey_ptr: *mut TABBY_EVP_PKEY) -> MesalinkInnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(pkey_ptr)?;
     let _ = unsafe { Box::from_raw(pkey_ptr) };
     Ok(CRYPTO_SUCCESS)

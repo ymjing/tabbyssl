@@ -10,18 +10,18 @@ $(RUST_LIB): Cargo.toml src/lib.rs src/error_san.rs src/macros.rs src/libssl/mod
 
 TABBY_LIBRARY_VERSION = @TABBY_LIBRARY_VERSION@
 
-libmesalink_la_SOURCES = \
+libtabbyssl_la_SOURCES = \
 	$(NULL)
-libmesalink_la_CFLAGS = \
+libtabbyssl_la_CFLAGS = \
 	$(AM_CFLAGS)
-libmesalink_la_LDFLAGS = \
+libtabbyssl_la_LDFLAGS = \
 	-export-dynamic \
 	-no-undefined \
 	-version-info ${TABBY_LIBRARY_VERSION} \
-	-export-symbols-regex "^mesalink_.*" \
+	-export-symbols-regex "^tabby_.*" \
 	$(LT_LINKER_ARGS) \
 	$(AM_LDFLAGS)
-libmesalink_la_LIBADD = \
+libtabbysslssl_la_LIBADD = \
 	$(RUST_LIB)
 
 clean-local:

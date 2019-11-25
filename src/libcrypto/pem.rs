@@ -30,19 +30,19 @@ use std::{io, ptr};
 /// ```
 ///
 #[no_mangle]
-pub extern "C" fn mesalink_PEM_read_bio_PrivateKey(
+pub extern "C" fn tabby_PEM_read_bio_PrivateKey(
     bio_ptr: *mut TABBY_BIO<'_>,
     pkey_pp: *mut *mut TABBY_EVP_PKEY,
     _cb: *mut c_void,
     _u: *mut c_void,
 ) -> *mut TABBY_EVP_PKEY {
     check_inner_result!(
-        inner_mesalink_pem_read_bio_privatekey(bio_ptr, pkey_pp),
+        inner_tabby_pem_read_bio_privatekey(bio_ptr, pkey_pp),
         ptr::null_mut()
     )
 }
 
-fn inner_mesalink_pem_read_bio_privatekey(
+fn inner_tabby_pem_read_bio_privatekey(
     bio_ptr: *mut TABBY_BIO<'_>,
     pkey_pp: *mut *mut TABBY_EVP_PKEY,
 ) -> MesalinkInnerResult<*mut TABBY_EVP_PKEY> {
@@ -72,18 +72,18 @@ fn inner_mesalink_pem_read_bio_privatekey(
 ///                                     pem_password_cb *cb, void *u);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_PEM_read_PrivateKey(
+pub extern "C" fn tabby_PEM_read_PrivateKey(
     file_ptr: *mut libc::FILE,
     pkey_pp: *mut *mut TABBY_EVP_PKEY,
     _cb: *mut c_void,
     _u: *mut c_void,
 ) -> *mut TABBY_EVP_PKEY {
-    let bio_ptr = bio::mesalink_BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
+    let bio_ptr = bio::tabby_BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
     let ret = check_inner_result!(
-        inner_mesalink_pem_read_bio_privatekey(bio_ptr, pkey_pp),
+        inner_tabby_pem_read_bio_privatekey(bio_ptr, pkey_pp),
         ptr::null_mut()
     );
-    bio::mesalink_BIO_free(bio_ptr);
+    bio::tabby_BIO_free(bio_ptr);
     ret
 }
 
@@ -96,19 +96,19 @@ pub extern "C" fn mesalink_PEM_read_PrivateKey(
 /// X509 *PEM_read_bio_X509(BIO *bio, X509 **x, pem_password_cb *cb, void *u);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_PEM_read_bio_X509(
+pub extern "C" fn tabby_PEM_read_bio_X509(
     bio_ptr: *mut TABBY_BIO<'_>,
     x509_pp: *mut *mut TABBY_X509,
     _cb: *mut c_void,
     _u: *mut c_void,
 ) -> *mut TABBY_X509 {
     check_inner_result!(
-        inner_mesalink_pem_read_bio_x509(bio_ptr, x509_pp),
+        inner_tabby_pem_read_bio_x509(bio_ptr, x509_pp),
         ptr::null_mut()
     )
 }
 
-fn inner_mesalink_pem_read_bio_x509(
+fn inner_tabby_pem_read_bio_x509(
     bio_ptr: *mut TABBY_BIO<'_>,
     x509_pp: *mut *mut TABBY_X509,
 ) -> MesalinkInnerResult<*mut TABBY_X509> {
@@ -135,18 +135,18 @@ fn inner_mesalink_pem_read_bio_x509(
 /// X509 *PEM_read_X509(FILE *fp, X509 **x, pem_password_cb *cb, void *u);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_PEM_read_X509(
+pub extern "C" fn tabby_PEM_read_X509(
     file_ptr: *mut libc::FILE,
     x509_pp: *mut *mut TABBY_X509,
     _cb: *mut c_void,
     _u: *mut c_void,
 ) -> *mut TABBY_X509 {
-    let bio_ptr = bio::mesalink_BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
+    let bio_ptr = bio::tabby_BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
     let ret = check_inner_result!(
-        inner_mesalink_pem_read_bio_x509(bio_ptr, x509_pp),
+        inner_tabby_pem_read_bio_x509(bio_ptr, x509_pp),
         ptr::null_mut()
     );
-    bio::mesalink_BIO_free(bio_ptr);
+    bio::tabby_BIO_free(bio_ptr);
     ret
 }
 
@@ -238,20 +238,20 @@ mod test {
 
     #[test]
     fn pem_read_bio_private_key() {
-        let bio_ptr = bio::mesalink_BIO_new_file(
+        let bio_ptr = bio::tabby_BIO_new_file(
             b"tests/end.key\0".as_ptr() as *const c_char,
             b"r\0".as_ptr() as *const c_char,
         );
         assert_ne!(bio_ptr, ptr::null_mut());
-        let pkey_ptr = mesalink_PEM_read_bio_PrivateKey(
+        let pkey_ptr = tabby_PEM_read_bio_PrivateKey(
             bio_ptr,
             ptr::null_mut(),
             ptr::null_mut(),
             ptr::null_mut(),
         );
         assert_ne!(pkey_ptr, ptr::null_mut());
-        evp::mesalink_EVP_PKEY_free(pkey_ptr);
-        bio::mesalink_BIO_free(bio_ptr);
+        evp::tabby_EVP_PKEY_free(pkey_ptr);
+        bio::tabby_BIO_free(bio_ptr);
     }
 
     #[test]
@@ -260,23 +260,23 @@ mod test {
         let fp = unsafe { file.open_file_stream_r() };
         assert_ne!(fp, ptr::null_mut());
         let pkey_ptr =
-            mesalink_PEM_read_PrivateKey(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
+            tabby_PEM_read_PrivateKey(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
         assert_ne!(pkey_ptr, ptr::null_mut());
-        evp::mesalink_EVP_PKEY_free(pkey_ptr);
+        evp::tabby_EVP_PKEY_free(pkey_ptr);
     }
 
     #[test]
     fn pem_read_bio_x509() {
-        let bio_ptr = bio::mesalink_BIO_new_file(
+        let bio_ptr = bio::tabby_BIO_new_file(
             b"tests/end.fullchain\0".as_ptr() as *const c_char,
             b"r\0".as_ptr() as *const c_char,
         );
         assert_ne!(bio_ptr, ptr::null_mut());
         let x509_ptr =
-            mesalink_PEM_read_bio_X509(bio_ptr, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
+            tabby_PEM_read_bio_X509(bio_ptr, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
         assert_ne!(x509_ptr, ptr::null_mut());
-        x509::mesalink_X509_free(x509_ptr);
-        bio::mesalink_BIO_free(bio_ptr);
+        x509::tabby_X509_free(x509_ptr);
+        bio::tabby_BIO_free(bio_ptr);
     }
 
     #[test]
@@ -285,8 +285,8 @@ mod test {
         let fp = unsafe { file.open_file_stream_r() };
         assert_ne!(fp, ptr::null_mut());
         let x509_ptr =
-            mesalink_PEM_read_X509(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
+            tabby_PEM_read_X509(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
         assert_ne!(x509_ptr, ptr::null_mut());
-        x509::mesalink_X509_free(x509_ptr);
+        x509::tabby_X509_free(x509_ptr);
     }
 }

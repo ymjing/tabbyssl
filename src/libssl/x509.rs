@@ -52,11 +52,11 @@ impl TABBY_X509 {
 /// void X509_free(X509 *a);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_X509_free(x509_ptr: *mut TABBY_X509) {
-    let _ = check_inner_result!(inner_mesalink_x509_free(x509_ptr), SSL_FAILURE);
+pub extern "C" fn tabby_X509_free(x509_ptr: *mut TABBY_X509) {
+    let _ = check_inner_result!(inner_tabby_x509_free(x509_ptr), SSL_FAILURE);
 }
 
-fn inner_mesalink_x509_free(x509_ptr: *mut TABBY_X509) -> MesalinkInnerResult<c_int> {
+fn inner_tabby_x509_free(x509_ptr: *mut TABBY_X509) -> MesalinkInnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(x509_ptr)?;
     let _ = unsafe { Box::from_raw(x509_ptr) };
     Ok(SSL_SUCCESS)
@@ -94,11 +94,11 @@ impl<'a> TABBY_X509_NAME {
 /// void X509_free(X509 *a);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_X509_NAME_free(x509_name_ptr: *mut TABBY_X509_NAME) {
-    let _ = check_inner_result!(inner_mesalink_x509_name_free(x509_name_ptr), SSL_FAILURE);
+pub extern "C" fn tabby_X509_NAME_free(x509_name_ptr: *mut TABBY_X509_NAME) {
+    let _ = check_inner_result!(inner_tabby_x509_name_free(x509_name_ptr), SSL_FAILURE);
 }
 
-fn inner_mesalink_x509_name_free(
+fn inner_tabby_x509_name_free(
     x509_name_ptr: *mut TABBY_X509_NAME,
 ) -> MesalinkInnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(x509_name_ptr)?;
@@ -116,16 +116,16 @@ fn inner_mesalink_x509_name_free(
 /// STACK_OF(X509_NAME) *X509_get_alt_subject_names(const X509 *x);;
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_X509_get_alt_subject_names(
+pub extern "C" fn tabby_X509_get_alt_subject_names(
     x509_ptr: *mut TABBY_X509,
 ) -> *mut TABBY_STACK_TABBY_X509_NAME {
     check_inner_result!(
-        inner_mesalink_x509_get_alt_subject_names(x509_ptr),
+        inner_tabby_x509_get_alt_subject_names(x509_ptr),
         ptr::null_mut()
     )
 }
 
-fn inner_mesalink_x509_get_alt_subject_names(
+fn inner_tabby_x509_get_alt_subject_names(
     x509_ptr: *mut TABBY_X509,
 ) -> MesalinkInnerResult<*mut TABBY_STACK_TABBY_X509_NAME> {
     let cert = sanitize_ptr_for_ref(x509_ptr)?;
@@ -158,13 +158,13 @@ fn inner_mesalink_x509_get_alt_subject_names(
 /// X509_NAME *X509_get_subject(const X509 *x);;
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_X509_get_subject(
+pub extern "C" fn tabby_X509_get_subject(
     x509_ptr: *mut TABBY_X509,
 ) -> *mut TABBY_X509_NAME {
-    check_inner_result!(inner_mesalink_x509_get_subject(x509_ptr), ptr::null_mut())
+    check_inner_result!(inner_tabby_x509_get_subject(x509_ptr), ptr::null_mut())
 }
 
-fn inner_mesalink_x509_get_subject(
+fn inner_tabby_x509_get_subject(
     x509_ptr: *mut TABBY_X509,
 ) -> MesalinkInnerResult<*mut TABBY_X509_NAME> {
     let cert = sanitize_ptr_for_ref(x509_ptr)?;
@@ -207,16 +207,16 @@ fn inner_mesalink_x509_get_subject(
 /// X509_NAME *X509_get_subject_name(const X509 *x);;
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_X509_get_subject_name(
+pub extern "C" fn tabby_X509_get_subject_name(
     x509_ptr: *mut TABBY_X509,
 ) -> *mut TABBY_X509_NAME {
     check_inner_result!(
-        inner_mesalink_x509_get_subject_name(x509_ptr),
+        inner_tabby_x509_get_subject_name(x509_ptr),
         ptr::null_mut()
     )
 }
 
-fn inner_mesalink_x509_get_subject_name(
+fn inner_tabby_x509_get_subject_name(
     x509_ptr: *mut TABBY_X509,
 ) -> MesalinkInnerResult<*mut TABBY_X509_NAME> {
     let cert = sanitize_ptr_for_ref(x509_ptr)?;
@@ -290,18 +290,18 @@ fn inner_mesalink_x509_get_subject_name(
 /// char * X509_NAME_oneline(X509_NAME *a,char *buf,int size);
 /// ```
 #[no_mangle]
-pub extern "C" fn mesalink_X509_NAME_oneline(
+pub extern "C" fn tabby_X509_NAME_oneline(
     x509_name_ptr: *mut TABBY_X509_NAME,
     buf_ptr: *mut c_char,
     size: c_int,
 ) -> *mut c_char {
     check_inner_result!(
-        inner_mesalink_x509_name_oneline(x509_name_ptr, buf_ptr, size),
+        inner_tabby_x509_name_oneline(x509_name_ptr, buf_ptr, size),
         ptr::null_mut()
     )
 }
 
-fn inner_mesalink_x509_name_oneline(
+fn inner_tabby_x509_name_oneline(
     x509_name_ptr: *mut TABBY_X509_NAME,
     buf_ptr: *mut c_char,
     buf_len: c_int,
@@ -343,57 +343,57 @@ mod tests {
         let x509_ptr = Box::into_raw(Box::new(x509)) as *mut TABBY_X509;
 
         let buf_1 = [0u8; 255];
-        let subject_der_ptr = mesalink_X509_get_subject(x509_ptr);
+        let subject_der_ptr = tabby_X509_get_subject(x509_ptr);
         assert_ne!(subject_der_ptr, ptr::null_mut());
-        let _ = mesalink_X509_NAME_oneline(
+        let _ = tabby_X509_NAME_oneline(
             subject_der_ptr as *mut TABBY_X509_NAME,
             buf_1.as_ptr() as *mut c_char,
             255,
         );
         let buf_2 = [0u8; 2];
-        let _ = mesalink_X509_NAME_oneline(
+        let _ = tabby_X509_NAME_oneline(
             subject_der_ptr as *mut TABBY_X509_NAME,
             buf_2.as_ptr() as *mut c_char,
             2,
         );
-        mesalink_X509_NAME_free(subject_der_ptr);
+        tabby_X509_NAME_free(subject_der_ptr);
 
-        let subject_name_ptr = mesalink_X509_get_subject_name(x509_ptr);
+        let subject_name_ptr = tabby_X509_get_subject_name(x509_ptr);
         assert_ne!(subject_name_ptr, ptr::null_mut());
 
         let buf = [0u8; 255];
-        let _ = mesalink_X509_NAME_oneline(
+        let _ = tabby_X509_NAME_oneline(
             subject_name_ptr as *mut TABBY_X509_NAME,
             buf.as_ptr() as *mut c_char,
             255,
         );
-        mesalink_X509_NAME_free(subject_name_ptr);
+        tabby_X509_NAME_free(subject_name_ptr);
 
-        let name_stack_ptr = mesalink_X509_get_alt_subject_names(x509_ptr);
+        let name_stack_ptr = tabby_X509_get_alt_subject_names(x509_ptr);
 
-        let name_count = mesalink_sk_X509_NAME_num(name_stack_ptr) as usize;
+        let name_count = tabby_sk_X509_NAME_num(name_stack_ptr) as usize;
         assert_eq!(true, name_count > 0);
         for index in 0..name_count {
-            let name_ptr = mesalink_sk_X509_NAME_value(name_stack_ptr, index as c_int);
+            let name_ptr = tabby_sk_X509_NAME_value(name_stack_ptr, index as c_int);
             assert_ne!(name_ptr, ptr::null_mut());
             let buf = [0u8; 253];
-            let _ = mesalink_X509_NAME_oneline(
+            let _ = tabby_X509_NAME_oneline(
                 name_ptr as *mut TABBY_X509_NAME,
                 buf.as_ptr() as *mut c_char,
                 253,
             );
         }
-        mesalink_sk_X509_NAME_free(name_stack_ptr);
-        mesalink_X509_free(x509_ptr);
+        tabby_sk_X509_NAME_free(name_stack_ptr);
+        tabby_X509_free(x509_ptr);
     }
 
     #[test]
     fn x509_null_pointer() {
-        mesalink_X509_free(ptr::null_mut());
-        mesalink_X509_NAME_free(ptr::null_mut());
+        tabby_X509_free(ptr::null_mut());
+        tabby_X509_NAME_free(ptr::null_mut());
         assert_eq!(
             ptr::null(),
-            mesalink_X509_NAME_oneline(ptr::null_mut(), ptr::null_mut(), 10)
+            tabby_X509_NAME_oneline(ptr::null_mut(), ptr::null_mut(), 10)
         );
     }
 }
