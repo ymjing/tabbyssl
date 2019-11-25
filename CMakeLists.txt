@@ -20,7 +20,7 @@ if(RUSTC_VERSION AND RUSTC_VERSION VERSION_LESS 1.31)
     message(FATAL_ERROR "Rust is too old, please install at least 1.31 to support the Rust 2018 edition")
 endif()
 
-project(TabbySSL VERSION 15.1.0)
+project(TabbySSL VERSION 10.0.0)
 set(LIB_NAME tabbyssl)
 
 # Config options
@@ -100,7 +100,7 @@ install(DIRECTORY tabbyssl
 # Set up CPack
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_PACKAGE_VENDOR "Github")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "TabbySSL - A memory-safe and OpenSSL-compatible TLS Library")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "TabbySSL - OpenSSL compatibility layer for the Rust SSL/TLS stack")
 set(CPACK_PACKAGE_VERSION ${TABBYSSL_VERSION_STRING})
 set(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/LICENSE)
 

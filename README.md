@@ -51,11 +51,8 @@ $ cmake --build .
 ```
 
 ## Examples
-MesaLink comes with two examples that demonstrate a TLS client and a TLS
-server. Both of them are located at `examples/`.
-
-The client example connects to a remote HTTPS server and prints the server's
-response.
+To enable examples, use `configure --enable-examples` or `cmake
+-DHAVE_EXAMPLES=on`.
 
 ```
 $ ./examples/client/client api.ipify.org
@@ -84,13 +81,6 @@ Via: 1.1 vegur
 
 [+] Received 177 bytes
 ```
-
-The server example comes with a pair of certificate and private key. The
-certificate file is in the PEM format and contains a chain of certificates from
-the server's certificate to the root CA certificate. The private key file
-contains a PKCS8-encoded private key in the PEM format. Once the server is up
-and running, open [https://127.0.0.1:8443](https://127.0.0.1:8443) and expect to
-see the hello message.
 
 ```
 $ ./examples/server/server
