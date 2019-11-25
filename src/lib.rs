@@ -75,7 +75,7 @@ lazy_static! {
 }
 
 #[doc(hidden)]
-pub(crate) trait MesalinkOpaquePointerType {
+pub(crate) trait OpaquePointerGuard {
     fn check_magic(&self) -> bool;
 }
 

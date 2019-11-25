@@ -9,24 +9,24 @@
  */
 
 use crate::libssl::err::{MesalinkBuiltinError, MesalinkInnerResult};
-use crate::MesalinkOpaquePointerType;
+use crate::OpaquePointerGuard;
 
 pub(crate) fn sanitize_const_ptr_for_ref<'a, T>(ptr: *const T) -> MesalinkInnerResult<&'a T>
 where
-    T: MesalinkOpaquePointerType,
+    T: OpaquePointerGuard,
 {
     let ptr = ptr as *mut T;
     sanitize_ptr_for_mut_ref(ptr).map(|r| r as &'a T)
 }
 pub(crate) fn sanitize_ptr_for_ref<'a, T>(ptr: *mut T) -> MesalinkInnerResult<&'a T>
 where
-    T: MesalinkOpaquePointerType,
+    T: OpaquePointerGuard,
 {
     sanitize_ptr_for_mut_ref(ptr).map(|r| r as &'a T)
 }
 pub(crate) fn sanitize_ptr_for_mut_ref<'a, T>(ptr: *mut T) -> MesalinkInnerResult<&'a mut T>
 where
-    T: MesalinkOpaquePointerType,
+    T: OpaquePointerGuard,
 {
     if ptr.is_null() {
         return Err(error!(MesalinkBuiltinError::NullPointer.into()));

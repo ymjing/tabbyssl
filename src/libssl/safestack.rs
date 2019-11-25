@@ -12,7 +12,7 @@ use super::err::{MesalinkBuiltinError, MesalinkInnerResult};
 use super::x509::{MESALINK_X509, MESALINK_X509_NAME};
 use super::{SSL_FAILURE, SSL_SUCCESS};
 use crate::error_san::*;
-use crate::{MesalinkOpaquePointerType, MAGIC, MAGIC_SIZE};
+use crate::{OpaquePointerGuard, MAGIC, MAGIC_SIZE};
 use libc::c_int;
 use std::ptr;
 
@@ -28,7 +28,7 @@ pub struct MESALINK_STACK_MESALINK_X509 {
     pub stack: Vec<MESALINK_X509>,
 }
 
-impl MesalinkOpaquePointerType for MESALINK_STACK_MESALINK_X509 {
+impl OpaquePointerGuard for MESALINK_STACK_MESALINK_X509 {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }
@@ -168,7 +168,7 @@ pub struct MESALINK_STACK_MESALINK_X509_NAME {
     pub stack: Vec<MESALINK_X509_NAME>,
 }
 
-impl MesalinkOpaquePointerType for MESALINK_STACK_MESALINK_X509_NAME {
+impl OpaquePointerGuard for MESALINK_STACK_MESALINK_X509_NAME {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }

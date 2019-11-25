@@ -12,7 +12,7 @@ use super::err::{MesalinkBuiltinError, MesalinkInnerResult};
 use super::safestack::MESALINK_STACK_MESALINK_X509_NAME;
 use super::{SSL_FAILURE, SSL_SUCCESS};
 use crate::error_san::*;
-use crate::{MesalinkOpaquePointerType, MAGIC, MAGIC_SIZE};
+use crate::{OpaquePointerGuard, MAGIC, MAGIC_SIZE};
 use libc::{c_char, c_int};
 use ring::io::der;
 use rustls;
@@ -28,7 +28,7 @@ pub struct MESALINK_X509 {
     pub inner: rustls::Certificate,
 }
 
-impl MesalinkOpaquePointerType for MESALINK_X509 {
+impl OpaquePointerGuard for MESALINK_X509 {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }
@@ -70,7 +70,7 @@ pub struct MESALINK_X509_NAME {
     name: Vec<u8>,
 }
 
-impl<'a> MesalinkOpaquePointerType for MESALINK_X509_NAME {
+impl<'a> OpaquePointerGuard for MESALINK_X509_NAME {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }

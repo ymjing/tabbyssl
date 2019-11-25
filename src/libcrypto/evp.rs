@@ -11,7 +11,7 @@
 use crate::error_san::*;
 use crate::libcrypto::{CRYPTO_FAILURE, CRYPTO_SUCCESS};
 use crate::libssl::err::MesalinkInnerResult;
-use crate::{MesalinkOpaquePointerType, MAGIC, MAGIC_SIZE};
+use crate::{OpaquePointerGuard, MAGIC, MAGIC_SIZE};
 use libc::c_int;
 use rustls;
 
@@ -23,7 +23,7 @@ pub struct MESALINK_EVP_PKEY {
     pub inner: rustls::PrivateKey,
 }
 
-impl MesalinkOpaquePointerType for MESALINK_EVP_PKEY {
+impl OpaquePointerGuard for MESALINK_EVP_PKEY {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }

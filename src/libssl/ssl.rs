@@ -37,7 +37,7 @@ use super::x509::MESALINK_X509;
 use super::{SslSessionCacheModes, SSL_ERROR, SSL_FAILURE, SSL_SUCCESS};
 use crate::error_san::*;
 use crate::libcrypto::evp::MESALINK_EVP_PKEY;
-use crate::{MesalinkOpaquePointerType, MAGIC, MAGIC_SIZE};
+use crate::{OpaquePointerGuard, MAGIC, MAGIC_SIZE};
 use libc::{c_char, c_int, c_long, c_uchar, c_void, size_t};
 use parking_lot::RwLock;
 use rustls;
@@ -64,7 +64,7 @@ pub struct MESALINK_CIPHER {
     ciphersuite: &'static rustls::SupportedCipherSuite,
 }
 
-impl MesalinkOpaquePointerType for MESALINK_CIPHER {
+impl OpaquePointerGuard for MESALINK_CIPHER {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }
@@ -101,7 +101,7 @@ enum ClientOrServerMode {
     Both,
 }
 
-impl MesalinkOpaquePointerType for MESALINK_METHOD {
+impl OpaquePointerGuard for MESALINK_METHOD {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }
@@ -189,7 +189,7 @@ pub struct MESALINK_CTX {
 #[doc(hidden)]
 pub type MESALINK_CTX_ARC = Arc<MESALINK_CTX>;
 
-impl MesalinkOpaquePointerType for MESALINK_CTX_ARC {
+impl OpaquePointerGuard for MESALINK_CTX_ARC {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }
@@ -288,7 +288,7 @@ pub struct MESALINK_SSL {
     mode: ClientOrServerMode,
 }
 
-impl MesalinkOpaquePointerType for MESALINK_SSL {
+impl OpaquePointerGuard for MESALINK_SSL {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }

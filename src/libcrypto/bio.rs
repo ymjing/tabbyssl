@@ -11,7 +11,7 @@
 use crate::error_san::*;
 use crate::libcrypto::{CRYPTO_FAILURE, CRYPTO_SUCCESS};
 use crate::libssl::err::{MesalinkBuiltinError, MesalinkInnerResult};
-use crate::{MesalinkOpaquePointerType, MAGIC, MAGIC_SIZE};
+use crate::{OpaquePointerGuard, MAGIC, MAGIC_SIZE};
 use libc::{c_char, c_int, c_long, c_void};
 use std::{ffi, fs, io, mem, ptr, slice};
 
@@ -174,7 +174,7 @@ pub struct MESALINK_BIO<'a> {
     flags: BioFlags,
 }
 
-impl<'a> MesalinkOpaquePointerType for MESALINK_BIO<'a> {
+impl<'a> OpaquePointerGuard for MESALINK_BIO<'a> {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }
