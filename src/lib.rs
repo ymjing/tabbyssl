@@ -23,11 +23,6 @@
 #![deny(trivial_numeric_casts, unused_qualifications)]
 #![deny(anonymous_parameters, unused_import_braces, unused_results, warnings)]
 
-// enum_to_str_derive for human-readable error numbers
-#[cfg(feature = "error_strings")]
-#[macro_use]
-extern crate enum_to_u8_slice_derive;
-
 use ring::rand;
 use ring::rand::SecureRandom;
 

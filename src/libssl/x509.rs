@@ -4,7 +4,7 @@
  * All rights reserved.
  */
 
-use super::err::{InnerResult, OpensslError};
+use super::err::{Error, InnerResult};
 use super::safestack::TABBY_STACK_TABBY_X509_NAME;
 use super::{SSL_FAILURE, SSL_SUCCESS};
 use crate::error_san::*;
@@ -151,17 +151,15 @@ fn inner_tabby_x509_get_alt_subject_names(
 ) -> InnerResult<*mut TABBY_STACK_TABBY_X509_NAME> {
     let cert = sanitize_ptr_for_ref(x509_ptr)?;
     let x509 = webpki::EndEntityCert::try_from(cert.inner.0.as_slice())
-        .map_err(|e| error!(rustls::Error::InvalidCertificateData(e.to_string()).into()))?;
+        .map_err(|e| rustls::Error::InvalidCertificateData(e.to_string()))?;
 
     let cert: Cert = unsafe { std::mem::transmute(x509) };
-    let subject_alt_name = cert
-        .subject_alt_name
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let subject_alt_name = cert.subject_alt_name.ok_or(Error::BadFuncArg)?;
     let mut reader = untrusted::Reader::new(subject_alt_name);
     let mut stack = TABBY_STACK_TABBY_X509_NAME::new(Vec::new());
     while !reader.at_end() {
-        let (tag, value) = der::read_tag_and_get_value(&mut reader)
-            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+        let (tag, value) =
+            der::read_tag_and_get_value(&mut reader).map_err(|_| Error::BadFuncArg)?;
         if tag == 0x82 {
             let x509_name = TABBY_X509_NAME::new(value.as_slice_less_safe());
             stack.stack.push(x509_name);
@@ -187,7 +185,7 @@ pub extern "C" fn tabby_X509_get_subject(x509_ptr: *mut TABBY_X509) -> *mut TABB
 fn inner_tabby_x509_get_subject(x509_ptr: *mut TABBY_X509) -> InnerResult<*mut TABBY_X509_NAME> {
     let cert = sanitize_ptr_for_ref(x509_ptr)?;
     let x509 = webpki::EndEntityCert::try_from(cert.inner.0.as_slice())
-        .map_err(|e| error!(rustls::Error::InvalidCertificateData(e.to_string()).into()))?;
+        .map_err(|e| rustls::Error::InvalidCertificateData(e.to_string()))?;
 
     let cert: Cert = unsafe { std::mem::transmute(x509) };
     let subject = cert.subject.as_slice_less_safe();
@@ -236,29 +234,29 @@ fn inner_tabby_x509_get_subject_name(
 ) -> InnerResult<*mut TABBY_X509_NAME> {
     let cert = sanitize_ptr_for_ref(x509_ptr)?;
     let x509 = webpki::EndEntityCert::try_from(cert.inner.0.as_slice())
-        .map_err(|e| error!(rustls::Error::InvalidCertificateData(e.to_string()).into()))?;
+        .map_err(|e| rustls::Error::InvalidCertificateData(e.to_string()))?;
 
     let mut subject_name = String::new();
 
     let cert: Cert = unsafe { std::mem::transmute(x509) };
     let _ = cert
         .subject
-        .read_all(error!(OpensslError::BadFuncArg.into()), |subject| {
+        .read_all(Error::BadFuncArg, |subject| {
             while !subject.at_end() {
-                let (maybe_asn_set_tag, sequence) = der::read_tag_and_get_value(subject)
-                    .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+                let (maybe_asn_set_tag, sequence) =
+                    der::read_tag_and_get_value(subject).map_err(|_| Error::BadFuncArg)?;
                 if (maybe_asn_set_tag as usize) != 0x31 {
                     // Subject should be an ASN.1 SET
-                    return Err(error!(OpensslError::BadFuncArg.into()));
+                    return Err(Error::BadFuncArg);
                 }
-                let _ = sequence.read_all(error!(OpensslError::BadFuncArg.into()), |seq| {
+                let _ = sequence.read_all(Error::BadFuncArg, |seq| {
                     let oid_and_data = der::expect_tag_and_get_value(seq, der::Tag::Sequence)
-                        .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
-                    oid_and_data.read_all(error!(OpensslError::BadFuncArg.into()), |oid_and_data| {
+                        .map_err(|_| Error::BadFuncArg)?;
+                    oid_and_data.read_all(Error::BadFuncArg, |oid_and_data| {
                         let oid = der::expect_tag_and_get_value(oid_and_data, der::Tag::OID)
-                            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+                            .map_err(|_| Error::BadFuncArg)?;
                         let (_, value) = der::read_tag_and_get_value(oid_and_data)
-                            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+                            .map_err(|_| Error::BadFuncArg)?;
 
                         let keyword = match oid.as_slice_less_safe().last().unwrap() {
                             // RFC 1779, X.500 attrinutes, oid 2.5.4
@@ -285,7 +283,7 @@ fn inner_tabby_x509_get_subject_name(
             }
             Ok(())
         })
-        .map_err(|_| error!(OpensslError::BadFuncArg.into()));
+        .map_err(|_| Error::BadFuncArg);
 
     let x509_name = TABBY_X509_NAME::new(subject_name.as_bytes());
     Ok(Box::into_raw(Box::new(x509_name)) as *mut TABBY_X509_NAME)
@@ -324,7 +322,7 @@ fn inner_tabby_x509_name_oneline(
         let name: &[c_char] = &*(x509_name.name.as_slice() as *const [u8] as *const [c_char]);
         let name_len: usize = name.len();
         if buf_ptr.is_null() {
-            return Err(error!(OpensslError::NullPointer.into()));
+            return Err(Error::NullPointer);
         }
         let buf = slice::from_raw_parts_mut(buf_ptr, buf_len);
         if name_len + 1 > buf_len {

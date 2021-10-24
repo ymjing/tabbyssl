@@ -4,7 +4,7 @@
  * All rights reserved.
  */
 
-use super::err::{InnerResult, OpensslError};
+use super::err::{Error, InnerResult};
 use super::x509::{TABBY_X509, TABBY_X509_NAME};
 use super::{SSL_FAILURE, SSL_SUCCESS};
 use crate::error_san::*;
@@ -92,10 +92,7 @@ fn inner_tabby_sk_X509_value(
     index: c_int,
 ) -> InnerResult<*const TABBY_X509> {
     let stack = sanitize_const_ptr_for_ref(stack_ptr)?;
-    let item = stack
-        .stack
-        .get(index as usize)
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let item = stack.stack.get(index as usize).ok_or(Error::BadFuncArg)?;
     Ok(item as *const TABBY_X509)
 }
 
@@ -230,10 +227,7 @@ fn inner_tabby_sk_X509_NAME_value(
     index: c_int,
 ) -> InnerResult<*const TABBY_X509_NAME> {
     let stack = sanitize_const_ptr_for_ref(stack_ptr)?;
-    let item = stack
-        .stack
-        .get(index as usize)
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let item = stack.stack.get(index as usize).ok_or(Error::BadFuncArg)?;
     Ok(item as *const TABBY_X509_NAME)
 }
 

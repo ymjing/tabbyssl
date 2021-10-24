@@ -6,7 +6,7 @@
 
 use crate::error_san::*;
 use crate::libcrypto::{CRYPTO_FAILURE, CRYPTO_SUCCESS};
-use crate::libssl::err::{InnerResult, OpensslError};
+use crate::libssl::err::{Error, InnerResult};
 use crate::{OpaquePointerGuard, MAGIC, MAGIC_SIZE};
 use libc::{c_char, c_int, c_long, c_void};
 use std::{ffi, fs, io, mem, ptr, slice};
@@ -221,12 +221,12 @@ pub extern "C" fn tabby_BIO_new<'a>(method_ptr: *const TABBY_BIO_METHOD) -> *mut
 
 fn inner_tabby_bio_new<'a>(method_ptr: *const TABBY_BIO_METHOD) -> InnerResult<*mut TABBY_BIO<'a>> {
     if method_ptr.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     if method_ptr != (&TABBY_BIO_METHOD_FILE as *const TABBY_BIO_METHOD)
         && method_ptr != (&TABBY_BIO_METHOD_MEM as *const TABBY_BIO_METHOD)
     {
-        return Err(error!(OpensslError::BadFuncArg.into()));
+        return Err(Error::BadFuncArg);
     }
     let method = unsafe { &*method_ptr };
     let bio = TABBY_BIO {
@@ -291,15 +291,15 @@ fn inner_tabby_bio_read(
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     if !bio.is_initialized() {
         // Mem or file not assigned yet
-        return Err(error!(OpensslError::BadFuncArg.into()));
+        return Err(Error::BadFuncArg);
     }
     if buf_ptr.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let buf_ptr = buf_ptr as *mut u8;
     let mut buf = unsafe { slice::from_raw_parts_mut(buf_ptr, len as usize) };
     let read_fn = &bio.method.read;
-    let ret = read_fn(&mut bio.inner, &mut buf).map_err(|e| error!(e.into()))?;
+    let ret = read_fn(&mut bio.inner, &mut buf).map_err(|e| Error::Io(e.kind()))?;
     Ok(ret as c_int)
 }
 
@@ -327,15 +327,15 @@ fn inner_tabby_bio_gets(
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     if !bio.is_initialized() {
         // Mem or file not assigned yet
-        return Err(error!(OpensslError::BadFuncArg.into()));
+        return Err(Error::BadFuncArg);
     }
     if buf_ptr.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let buf_ptr = buf_ptr as *mut u8;
     let mut buf = unsafe { slice::from_raw_parts_mut(buf_ptr, size as usize) };
     let gets_fn = &bio.method.gets;
-    let ret = gets_fn(&mut bio.inner, &mut buf).map_err(|e| error!(e.into()))?;
+    let ret = gets_fn(&mut bio.inner, &mut buf).map_err(|e| Error::Io(e.kind()))?;
     Ok(ret as c_int)
 }
 
@@ -363,15 +363,15 @@ fn inner_tabby_bio_write(
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     if !bio.is_initialized() {
         // Mem or file not assigned yet
-        return Err(error!(OpensslError::BadFuncArg.into()));
+        return Err(Error::BadFuncArg);
     }
     if buf_ptr.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let buf_ptr = buf_ptr as *const u8;
     let buf = unsafe { slice::from_raw_parts(buf_ptr, len as usize) };
     let write_fn = &bio.method.write;
-    let ret = write_fn(&mut bio.inner, &buf).map_err(|e| error!(e.into()))?;
+    let ret = write_fn(&mut bio.inner, &buf).map_err(|e| Error::Io(e.kind()))?;
     Ok(ret as c_int)
 }
 
@@ -391,16 +391,16 @@ fn inner_tabby_bio_puts(bio_ptr: *mut TABBY_BIO<'_>, buf_ptr: *const c_char) -> 
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     if !bio.is_initialized() {
         // Mem or file not assigned yet
-        return Err(error!(OpensslError::BadFuncArg.into()));
+        return Err(Error::BadFuncArg);
     }
     if buf_ptr.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let strlen = unsafe { libc::strlen(buf_ptr) };
     let buf_ptr = buf_ptr as *const u8;
     let buf = unsafe { slice::from_raw_parts(buf_ptr, strlen + 1) };
     let puts_fn = &bio.method.puts;
-    let ret = puts_fn(&mut bio.inner, &buf).map_err(|e| error!(e.into()))?;
+    let ret = puts_fn(&mut bio.inner, &buf).map_err(|e| Error::Io(e.kind()))?;
     Ok(ret as c_int)
 }
 
@@ -455,12 +455,12 @@ fn open_file_from_filename_and_mode(
     mode_ptr: *const c_char,
 ) -> InnerResult<fs::File> {
     if filename_ptr.is_null() || mode_ptr.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let mode = unsafe {
         ffi::CStr::from_ptr(mode_ptr)
             .to_str()
-            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?
+            .map_err(|_| Error::BadFuncArg)?
     };
     let mut open_mode = fs::OpenOptions::new();
     let open_mode = match mode {
@@ -470,14 +470,14 @@ fn open_file_from_filename_and_mode(
         "r+" | "r+b" | "rb+" => open_mode.read(true).write(true),
         "w+" | "w+b" | "wb+" => open_mode.read(true).write(true).create(true).truncate(true),
         "a+" | "a+b" | "ab+" => open_mode.read(true).write(true).create(true).append(true),
-        _ => return Err(error!(OpensslError::BadFuncArg.into())),
+        _ => return Err(Error::BadFuncArg),
     };
     let filename = unsafe {
         ffi::CStr::from_ptr(filename_ptr)
             .to_str()
-            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?
+            .map_err(|_| Error::BadFuncArg)?
     };
-    open_mode.open(filename).map_err(|e| error!(e.into()))
+    open_mode.open(filename).map_err(|e| Error::Io(e.kind()))
 }
 
 /// `BIO_read_filename()` sets the file BIO b to use file name for reading.
@@ -584,10 +584,10 @@ fn inner_tabby_bio_new_fp<'a>(
     flags: c_int,
 ) -> InnerResult<*mut TABBY_BIO<'a>> {
     if stream.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let file = unsafe { fs::File::from_file_stream(stream) };
-    let flags = BioFlags::from_bits(flags as u32).ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let flags = BioFlags::from_bits(flags as u32).ok_or(Error::BadFuncArg)?;
     let bio = TABBY_BIO {
         magic: *MAGIC,
         inner: MesalinkBioInner::File(file),
@@ -616,7 +616,7 @@ fn inner_tabby_bio_set_fp(
 ) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let file = unsafe { fs::File::from_file_stream(fp) };
-    let flags = BioFlags::from_bits(flags as u32).ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let flags = BioFlags::from_bits(flags as u32).ok_or(Error::BadFuncArg)?;
     bio.inner = MesalinkBioInner::File(file);
     bio.flags = flags;
     Ok(CRYPTO_SUCCESS)
@@ -660,7 +660,7 @@ pub extern "C" fn tabby_BIO_set_close(bio_ptr: *mut TABBY_BIO<'_>, flag: c_long)
 
 fn inner_tabby_bio_set_close(bio_ptr: *mut TABBY_BIO<'_>, flag: c_long) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
-    let flag = BioFlags::from_bits(flag as u32).ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let flag = BioFlags::from_bits(flag as u32).ok_or(Error::BadFuncArg)?;
     bio.flags = flag;
     Ok(CRYPTO_SUCCESS)
 }

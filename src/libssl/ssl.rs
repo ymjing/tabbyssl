@@ -26,7 +26,7 @@
 
 // Module imports
 
-use super::err::{Error, ErrorCode, InnerResult, OpensslError};
+use super::err::{Error, ErrorCode, InnerResult};
 use super::safestack::TABBY_STACK_TABBY_X509;
 use super::x509::TABBY_X509;
 use super::{SslSessionCacheModes, SSL_ERROR, SSL_FAILURE, SSL_SUCCESS};
@@ -209,7 +209,7 @@ pub struct TABBY_SSL {
     hostname: Option<String>,
     io: Option<net::TcpStream>,
     session: Option<Connection>,
-    error: ErrorCode,
+    last_error: Error,
     mode: ClientOrServerMode,
 }
 
@@ -329,7 +329,7 @@ impl TABBY_SSL {
             hostname: None,
             io: None,
             session: None,
-            error: ErrorCode::default(),
+            last_error: Error::None,
             mode: ctx.mode.clone(),
         }
     }
@@ -339,20 +339,14 @@ impl TABBY_SSL {
             (Some(session), Some(io)) => match session {
                 Connection::Client(conn) => {
                     let mut stream = Stream::new(conn, io);
-                    stream.read(buf).map_err(|e| match e.kind() {
-                        io::ErrorKind::WouldBlock => error!(OpensslError::WantRead.into()),
-                        _ => error!(e.into()),
-                    })
+                    stream.read(buf).map_err(|e| Error::Io(e.kind()))
                 }
                 Connection::Server(conn) => {
                     let mut stream = Stream::new(conn, io);
-                    stream.read(buf).map_err(|e| match e.kind() {
-                        io::ErrorKind::WouldBlock => error!(OpensslError::WantRead.into()),
-                        _ => error!(e.into()),
-                    })
+                    stream.read(buf).map_err(|e| Error::Io(e.kind()))
                 }
             },
-            _ => Err(error!(OpensslError::BadFuncArg.into())),
+            _ => Err(Error::BadFuncArg),
         }
     }
 
@@ -361,20 +355,14 @@ impl TABBY_SSL {
             (Some(session), Some(io)) => match session {
                 Connection::Client(conn) => {
                     let mut stream = Stream::new(conn, io);
-                    stream.write(buf).map_err(|e| match e.kind() {
-                        io::ErrorKind::WouldBlock => error!(OpensslError::WantWrite.into()),
-                        _ => error!(e.into()),
-                    })
+                    stream.write(buf).map_err(|e| Error::Io(e.kind()))
                 }
                 Connection::Server(conn) => {
                     let mut stream = Stream::new(conn, io);
-                    stream.write(buf).map_err(|e| match e.kind() {
-                        io::ErrorKind::WouldBlock => error!(OpensslError::WantWrite.into()),
-                        _ => error!(e.into()),
-                    })
+                    stream.write(buf).map_err(|e| Error::Io(e.kind()))
                 }
             },
-            _ => Err(error!(OpensslError::BadFuncArg.into())),
+            _ => Err(Error::BadFuncArg),
         }
     }
 
@@ -383,41 +371,26 @@ impl TABBY_SSL {
             (Some(session), Some(io)) => match session {
                 Connection::Client(conn) => {
                     let mut stream = Stream::new(conn, io);
-                    stream.flush().map_err(|e| match e.kind() {
-                        io::ErrorKind::WouldBlock => error!(OpensslError::WantWrite.into()),
-                        _ => error!(e.into()),
-                    })
+                    stream.flush().map_err(|e| Error::Io(e.kind()))
                 }
                 Connection::Server(conn) => {
                     let mut stream = Stream::new(conn, io);
-                    stream.flush().map_err(|e| match e.kind() {
-                        io::ErrorKind::WouldBlock => error!(OpensslError::WantWrite.into()),
-                        _ => error!(e.into()),
-                    })
+                    stream.flush().map_err(|e| Error::Io(e.kind()))
                 }
             },
-            _ => Err(error!(OpensslError::BadFuncArg.into())),
+            _ => Err(Error::BadFuncArg),
         }
     }
 
     pub(crate) fn ssl_write_early_data(&mut self, buf: &[u8]) -> Result<usize, Error> {
         match self.session.as_mut() {
             Some(Connection::Client(session)) => {
-                let mut early_writer = session.early_data().ok_or(error!(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    "Early data not supported"
-                )
-                .into()))?;
-                match early_writer.write(buf) {
-                    Ok(len) => Ok(len),
-                    Err(e) => {
-                        let error = error!(e.into());
-                        self.error = ErrorCode::from(&error);
-                        Err(error)
-                    }
-                }
+                let mut early_writer = session
+                    .early_data()
+                    .ok_or(Error::Io(io::ErrorKind::InvalidData))?;
+                early_writer.write(buf).map_err(|e| Error::Io(e.kind()))
             }
-            _ => Err(error!(OpensslError::BadFuncArg.into())),
+            _ => Err(Error::BadFuncArg),
         }
     }
 }
@@ -763,14 +736,14 @@ fn inner_tabby_ssl_ctx_load_verify_locations(
 ) -> InnerResult<c_int> {
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     if cafile_ptr.is_null() && capath_ptr.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let ctx = util::get_context_mut(ctx);
     if !cafile_ptr.is_null() {
         let cafile = unsafe {
             ffi::CStr::from_ptr(cafile_ptr)
                 .to_str()
-                .map_err(|_| error!(OpensslError::BadFuncArg.into()))?
+                .map_err(|_| Error::BadFuncArg)?
         };
         load_cert_into_root_store(&mut ctx.ca_roots, path::Path::new(cafile))?;
     }
@@ -778,12 +751,11 @@ fn inner_tabby_ssl_ctx_load_verify_locations(
         let capath = unsafe {
             ffi::CStr::from_ptr(capath_ptr)
                 .to_str()
-                .map_err(|_| error!(OpensslError::BadFuncArg.into()))?
+                .map_err(|_| Error::BadFuncArg)?
         };
-        let dir = fs::read_dir(path::Path::new(capath))
-            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+        let dir = fs::read_dir(path::Path::new(capath)).map_err(|_| Error::BadFuncArg)?;
         for file_path in dir {
-            let file_path = file_path.map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+            let file_path = file_path.map_err(|_| Error::BadFuncArg)?;
             load_cert_into_root_store(&mut ctx.ca_roots, &file_path.path())?;
         }
     }
@@ -792,11 +764,9 @@ fn inner_tabby_ssl_ctx_load_verify_locations(
 }
 
 fn load_cert_into_root_store(store: &mut RootCertStore, path: &path::Path) -> InnerResult<()> {
-    let file = fs::File::open(path).map_err(|e| error!(e.into()))?;
+    let file = fs::File::open(path).map_err(|e| Error::Io(e.kind()))?;
     let mut reader = io::BufReader::new(file);
-    let der_certificates =
-        rustls_pemfile::certs(&mut reader).map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
-
+    let der_certificates = rustls_pemfile::certs(&mut reader).map_err(|_| Error::BadFuncArg)?;
     let _ = store.add_parsable_certificates(&der_certificates);
     Ok(())
 }
@@ -832,18 +802,18 @@ fn inner_tabby_ssl_ctx_use_certificate_chain_file(
 
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     if filename_ptr.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let filename = unsafe {
         ffi::CStr::from_ptr(filename_ptr)
             .to_str()
-            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?
+            .map_err(|_| Error::BadFuncArg)?
     };
-    let file = fs::File::open(filename).map_err(|e| error!(e.into()))?;
+    let file = fs::File::open(filename).map_err(|e| Error::Io(e.kind()))?;
     let mut buf_reader = io::BufReader::new(file);
     let certs = pem::get_certificate_chain(&mut buf_reader);
     if certs.is_empty() {
-        return Err(error!(OpensslError::BadFuncArg.into()));
+        return Err(Error::BadFuncArg);
     }
     util::get_context_mut(ctx).certificates = Some(certs);
     Ok(SSL_SUCCESS)
@@ -917,7 +887,7 @@ fn inner_tabby_ssl_ctx_use_certificate_asn1(
     d: *mut c_uchar,
 ) -> InnerResult<c_int> {
     if d.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     let buf: &[u8] = unsafe { slice::from_raw_parts_mut(d, len as usize) };
@@ -1024,17 +994,17 @@ fn inner_tabby_ssl_ctx_use_privatekey_file(
 
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     if filename_ptr.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let filename = unsafe {
         ffi::CStr::from_ptr(filename_ptr)
             .to_str()
-            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?
+            .map_err(|_| Error::BadFuncArg)?
     };
-    let file = fs::File::open(filename).map_err(|e| error!(e.into()))?;
+    let file = fs::File::open(filename).map_err(|e| Error::Io(e.kind()))?;
     let mut buf_reader = io::BufReader::new(file);
-    let key = pem::get_either_rsa_or_ecdsa_private_key(&mut buf_reader)
-        .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+    let key =
+        pem::get_either_rsa_or_ecdsa_private_key(&mut buf_reader).map_err(|_| Error::BadFuncArg)?;
     util::get_context_mut(ctx).private_key = Some(key);
     Ok(SSL_SUCCESS)
 }
@@ -1068,7 +1038,7 @@ fn inner_tabby_ssl_ctx_use_privatekey_asn1(
     len: c_long,
 ) -> InnerResult<c_int> {
     if d.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     let buf: &[u8] = unsafe { slice::from_raw_parts_mut(d, len as usize) };
@@ -1129,14 +1099,13 @@ fn inner_tabby_ssl_ctx_check_private_key(ctx_ptr: *mut TABBY_CTX_ARC) -> InnerRe
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     match (&ctx.certificates, &ctx.private_key) {
         (&Some(ref certs), &Some(ref key)) => {
-            let signing_key = sign::any_supported_type(&key)
-                .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+            let signing_key = sign::any_supported_type(&key).map_err(|_| Error::BadFuncArg)?;
             let _ = sign::CertifiedKey::new(certs.clone(), signing_key)
                 .end_entity_cert()
-                .map_err(|_| error!(OpensslError::BadFuncArg.into()))?; // SignError
+                .map_err(|_| Error::BadFuncArg)?; // SignError
             Ok(SSL_SUCCESS)
         }
-        _ => Err(error!(OpensslError::BadFuncArg.into())),
+        _ => Err(Error::BadFuncArg),
     }
 }
 
@@ -1156,10 +1125,7 @@ pub extern "C" fn tabby_SSL_check_private_key(ctx_ptr: *mut TABBY_SSL) -> c_int 
 fn inner_tabby_ssl_check_private_key(ssl_ptr: *mut TABBY_SSL) -> InnerResult<c_int> {
     let ssl = sanitize_ptr_for_ref(ssl_ptr)?;
 
-    let ctx = ssl
-        .context
-        .as_ref()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let ctx = ssl.context.as_ref().ok_or(Error::BadFuncArg)?;
     let ctx_ptr = ctx as *const TABBY_CTX_ARC as *mut TABBY_CTX_ARC;
     inner_tabby_ssl_ctx_check_private_key(ctx_ptr)
 }
@@ -1182,7 +1148,7 @@ pub extern "C" fn tabby_SSL_CTX_set_verify(
 }
 
 fn inner_tabby_ssl_ctx_set_verify(ctx_ptr: *mut TABBY_CTX_ARC, mode: c_int) -> InnerResult<c_int> {
-    let mode = VerifyModes::from_bits(mode).ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let mode = VerifyModes::from_bits(mode).ok_or(Error::BadFuncArg)?;
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     let ctx_mut = util::get_context_mut(ctx);
     ctx_mut.verify_modes = mode;
@@ -1333,10 +1299,7 @@ pub extern "C" fn tabby_SSL_get_SSL_CTX(ssl_ptr: *mut TABBY_SSL) -> *const TABBY
 
 fn inner_tabby_ssl_get_ssl_ctx(ssl_ptr: *mut TABBY_SSL) -> InnerResult<*mut TABBY_CTX_ARC> {
     let ssl = sanitize_ptr_for_ref(ssl_ptr)?;
-    let ctx = ssl
-        .context
-        .as_ref()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let ctx = ssl.context.as_ref().ok_or(Error::BadFuncArg)?;
     Ok(ctx as *const TABBY_CTX_ARC as *mut TABBY_CTX_ARC)
 }
 
@@ -1362,10 +1325,7 @@ fn inner_tabby_ssl_set_ssl_ctx(
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     ssl.context = Some(ctx.clone());
-    let ctx_ref = ssl
-        .context
-        .as_ref()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let ctx_ref = ssl.context.as_ref().ok_or(Error::BadFuncArg)?;
     Ok(ctx_ref as *const TABBY_CTX_ARC)
 }
 
@@ -1386,13 +1346,8 @@ pub extern "C" fn tabby_SSL_get_current_cipher(ssl_ptr: *mut TABBY_SSL) -> *mut 
 
 fn inner_tabby_ssl_get_current_cipher(ssl_ptr: *mut TABBY_SSL) -> InnerResult<*mut TABBY_CIPHER> {
     let ssl = sanitize_ptr_for_ref(ssl_ptr)?;
-    let session = ssl
-        .session
-        .as_ref()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
-    let ciphersuite = session
-        .negotiated_cipher_suite()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let session = ssl.session.as_ref().ok_or(Error::BadFuncArg)?;
+    let ciphersuite = session.negotiated_cipher_suite().ok_or(Error::BadFuncArg)?;
     Ok(Box::into_raw(Box::new(TABBY_CIPHER::new(ciphersuite)))) // Allocates memory!
 }
 
@@ -1561,16 +1516,13 @@ fn inner_tabby_ssl_get_peer_certificates(
 }
 
 fn get_peer_certificates(ssl: &TABBY_SSL) -> InnerResult<&[Certificate]> {
-    let session = ssl
-        .session
-        .as_ref()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let session = ssl.session.as_ref().ok_or(Error::BadFuncArg)?;
     session
         .peer_certificates()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))
+        .ok_or(Error::BadFuncArg)
         .and_then(|certs| {
             if certs.is_empty() {
-                Err(error!(OpensslError::BadFuncArg.into()))
+                Err(Error::BadFuncArg)
             } else {
                 Ok(certs)
             }
@@ -1602,15 +1554,14 @@ fn inner_tabby_ssl_set_tlsext_host_name(
 ) -> InnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     if hostname_ptr.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let hostname = unsafe {
         ffi::CStr::from_ptr(hostname_ptr)
             .to_str()
-            .map_err(|_| error!(OpensslError::BadFuncArg.into()))?
+            .map_err(|_| Error::BadFuncArg)?
     };
-    let _ = webpki::DnsNameRef::try_from_ascii_str(hostname)
-        .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+    let _ = webpki::DnsNameRef::try_from_ascii_str(hostname).map_err(|_| Error::BadFuncArg)?;
     ssl.hostname = Some(hostname.to_owned());
     Ok(SSL_SUCCESS)
 }
@@ -1644,7 +1595,7 @@ pub extern "C" fn tabby_SSL_set_fd(ssl_ptr: *mut TABBY_SSL, fd: c_int) -> c_int 
 fn inner_tabby_ssl_set_fd(ssl_ptr: *mut TABBY_SSL, fd: c_int) -> InnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     if fd < 0 {
-        return Err(error!(OpensslError::BadFuncArg.into()));
+        return Err(Error::BadFuncArg);
     }
     let socket = unsafe { net::TcpStream::from_raw_fd(fd) };
     ssl.io = Some(socket);
@@ -1677,10 +1628,7 @@ pub extern "C" fn tabby_SSL_get_fd(ssl_ptr: *mut TABBY_SSL) -> c_int {
 #[cfg(unix)]
 fn inner_measlink_ssl_get_fd(ssl_ptr: *mut TABBY_SSL) -> InnerResult<c_int> {
     let ssl = sanitize_ptr_for_ref(ssl_ptr)?;
-    let socket = ssl
-        .io
-        .as_ref()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let socket = ssl.io.as_ref().ok_or(Error::BadFuncArg)?;
     Ok(socket.as_raw_fd())
 }
 
@@ -1703,7 +1651,7 @@ pub extern "C" fn tabby_SSL_set_socket(ssl_ptr: *mut TABBY_SSL, sock: libc::SOCK
 fn inner_tabby_ssl_set_socket(ssl_ptr: *mut TABBY_SSL, sock: libc::SOCKET) -> InnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     if sock == 0 {
-        return Err(error!(OpensslError::BadFuncArg.into()));
+        return Err(Error::BadFuncArg);
     }
     let socket = unsafe { net::TcpStream::from_raw_socket(sock as std::os::windows::raw::SOCKET) };
     ssl.io = Some(socket);
@@ -1726,10 +1674,7 @@ pub extern "C" fn tabby_SSL_get_socket(ssl_ptr: *mut TABBY_SSL) -> libc::SOCKET 
 #[cfg(windows)]
 fn inner_measlink_ssl_get_socket(ssl_ptr: *mut TABBY_SSL) -> InnerResult<libc::SOCKET> {
     let ssl = sanitize_ptr_for_ref(ssl_ptr)?;
-    let socket = ssl
-        .io
-        .as_ref()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let socket = ssl.io.as_ref().ok_or(Error::BadFuncArg)?;
     Ok(socket.as_raw_socket() as usize)
 }
 
@@ -1806,33 +1751,20 @@ fn inner_tabby_ssl_do_handshake(ssl_ptr: *mut TABBY_SSL) -> InnerResult<c_int> {
 }
 
 fn setup_ssl_if_ready(ssl: &mut TABBY_SSL) -> InnerResult<c_int> {
-    match ssl.error {
-        ErrorCode::OpensslErrorNone
-        | ErrorCode::OpensslErrorWantRead
-        | ErrorCode::OpensslErrorWantWrite
-        | ErrorCode::OpensslErrorWantConnect
-        | ErrorCode::OpensslErrorWantAccept => ssl.error = ErrorCode::default(),
-        _ => (),
-    };
-
     if ssl.session.is_none() {
         match ssl.mode {
             ClientOrServerMode::Client | ClientOrServerMode::Both => {
-                let hostname = ssl
-                    .hostname
-                    .as_ref()
-                    .ok_or(error!(OpensslError::BadFuncArg.into()))?
-                    .clone();
+                let hostname = ssl.hostname.as_ref().ok_or(Error::BadFuncArg)?.clone();
 
-                let server_name = ServerName::try_from(hostname.as_str())
-                    .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+                let server_name =
+                    ServerName::try_from(hostname.as_str()).map_err(|_| Error::BadFuncArg)?;
                 let client_session = ClientConnection::new(ssl.client_config.clone(), server_name)
-                    .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+                    .map_err(|_| Error::BadFuncArg)?;
                 ssl.session = Some(Connection::Client(client_session));
             }
             ClientOrServerMode::Server => {
                 let server_session = ServerConnection::new(ssl.server_config.clone())
-                    .map_err(|_| error!(OpensslError::BadFuncArg.into()))?;
+                    .map_err(|_| Error::BadFuncArg)?;
                 ssl.session = Some(Connection::Server(server_session));
             }
         }
@@ -1896,9 +1828,17 @@ pub extern "C" fn tabby_SSL_get_error(ssl_ptr: *mut TABBY_SSL, ret: c_int) -> c_
 fn inner_tabby_ssl_get_error(ssl_ptr: *mut TABBY_SSL, ret: c_int) -> InnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     if ret > 0 {
-        Ok(0)
+        Ok(ErrorCode::None as c_int)
     } else {
-        Ok(ssl.error as c_int)
+        match &ssl.last_error {
+            Error::None => Ok(ErrorCode::None as c_int),
+            Error::Io(e) => match e {
+                io::ErrorKind::WouldBlock => Ok(ErrorCode::WantRead as c_int),
+                _ => Ok(ErrorCode::Syscall as c_int),
+            },
+            Error::Tls(_) => Ok(ErrorCode::Ssl as c_int),
+            _ => Ok(ErrorCode::InvalidInput as c_int),
+        }
     }
 }
 
@@ -1925,28 +1865,20 @@ fn inner_tabby_ssl_read(
     buf_len: c_int,
 ) -> InnerResult<c_int> {
     if buf_ptr.is_null() || buf_len < 0 {
-        return Err(error!(OpensslError::BadFuncArg.into()));
+        return Err(Error::BadFuncArg);
     }
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     let buf = unsafe { slice::from_raw_parts_mut(buf_ptr, buf_len as usize) };
-    match ssl.ssl_read(buf) {
-        Ok(count) => Ok(count as c_int),
-        Err(e) => {
-            let error_code = ErrorCode::from(&e);
-            ssl.error = ErrorCode::from(&e);
-            if error_code == ErrorCode::IoErrorWouldBlock {
-                ssl.error = ErrorCode::OpensslErrorWantRead;
-            } else {
-                ssl.error = error_code;
+    ssl.ssl_read(buf).map(|ret| ret as c_int).or_else(|e| {
+        if let Error::Io(k) = e {
+            match k {
+                io::ErrorKind::WouldBlock => return Ok(SSL_ERROR),
+                _ => (),
             }
-            if ssl.error == ErrorCode::OpensslErrorWantRead
-                || ssl.error == ErrorCode::IoErrorNotConnected
-            {
-                return Ok(SSL_ERROR);
-            }
-            Err(e)
         }
-    }
+        ssl.last_error = e.clone();
+        Err(e)
+    })
 }
 
 /// `SSL_write` - write `num` bytes from the buffer `buf` into the
@@ -1975,14 +1907,20 @@ fn inner_tabby_ssl_write(
     buf_len: c_int,
 ) -> InnerResult<c_int> {
     if buf_ptr.is_null() || buf_len < 0 {
-        return Err(error!(OpensslError::BadFuncArg.into()));
+        return Err(Error::BadFuncArg);
     }
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     let buf = unsafe { slice::from_raw_parts(buf_ptr, buf_len as usize) };
-    match ssl.ssl_write(buf) {
-        Ok(count) => Ok(count as c_int),
-        Err(e) => Err(e),
-    }
+    ssl.ssl_write(buf).map(|ret| ret as c_int).or_else(|e| {
+        if let Error::Io(k) = e {
+            match k {
+                io::ErrorKind::WouldBlock => return Ok(SSL_ERROR),
+                _ => (),
+            }
+        }
+        ssl.last_error = e.clone();
+        Err(e)
+    })
 }
 
 /// `SSL_write` - write `num` bytes from the buffer `buf` into the
@@ -2000,10 +1938,16 @@ pub extern "C" fn tabby_SSL_flush(ssl_ptr: *mut TABBY_SSL) -> c_int {
 
 fn inner_tabby_ssl_flush(ssl_ptr: *mut TABBY_SSL) -> InnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
-    match ssl.ssl_flush() {
-        Ok(_) => Ok(SSL_SUCCESS),
-        Err(e) => Err(e),
-    }
+    ssl.ssl_flush().map(|_| SSL_SUCCESS).or_else(|e| {
+        if let Error::Io(k) = e {
+            match k {
+                io::ErrorKind::WouldBlock => return Ok(SSL_ERROR),
+                _ => (),
+            }
+        }
+        ssl.last_error = e.clone();
+        Err(e)
+    })
 }
 
 /// `SSL_write_early_data` - write `num` bytes of TLS 1.3 early data from the
@@ -2034,10 +1978,10 @@ fn inner_tabby_ssl_write_early_data(
     written_len_ptr: *mut size_t,
 ) -> InnerResult<c_int> {
     if buf_ptr.is_null() || buf_len < 0 {
-        return Err(error!(OpensslError::BadFuncArg.into()));
+        return Err(Error::BadFuncArg);
     }
     if written_len_ptr.is_null() {
-        return Err(error!(OpensslError::NullPointer.into()));
+        return Err(Error::NullPointer);
     }
     let _ = inner_tabby_ssl_connect(ssl_ptr)?; // creates a client session
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
@@ -2049,7 +1993,13 @@ fn inner_tabby_ssl_write_early_data(
             Ok(SSL_SUCCESS)
         }
         Err(e) => {
-            ssl.error = ErrorCode::from(&e);
+            if let Error::Io(k) = e {
+                match k {
+                    io::ErrorKind::WouldBlock => return Ok(SSL_ERROR),
+                    _ => (),
+                }
+            }
+            ssl.last_error = e.clone();
             Err(e)
         }
     }
@@ -2071,10 +2021,7 @@ pub extern "C" fn tabby_SSL_get_early_data_status(ssl_ptr: *mut TABBY_SSL) -> c_
 
 fn inner_tabby_ssl_get_early_data_status(ssl_ptr: *mut TABBY_SSL) -> InnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
-    let session = ssl
-        .session
-        .as_mut()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let session = ssl.session.as_mut().ok_or(Error::BadFuncArg)?;
 
     match session {
         Connection::Client(s) => {
@@ -2102,10 +2049,7 @@ pub extern "C" fn tabby_SSL_shutdown(ssl_ptr: *mut TABBY_SSL) -> c_int {
 
 fn inner_tabby_ssl_shutdown(ssl_ptr: *mut TABBY_SSL) -> InnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
-    let session = ssl
-        .session
-        .as_mut()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let session = ssl.session.as_mut().ok_or(Error::BadFuncArg)?;
     session.send_close_notify();
     Ok(SSL_SUCCESS)
 }
@@ -2124,13 +2068,8 @@ pub extern "C" fn tabby_SSL_get_version(ssl_ptr: *mut TABBY_SSL) -> *const c_cha
 
 fn inner_tabby_ssl_get_version(ssl_ptr: *mut TABBY_SSL) -> InnerResult<*const c_char> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
-    let session = ssl
-        .session
-        .as_ref()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
-    let version = session
-        .protocol_version()
-        .ok_or(error!(OpensslError::BadFuncArg.into()))?;
+    let session = ssl.session.as_ref().ok_or(Error::BadFuncArg)?;
+    let version = session.protocol_version().ok_or(Error::BadFuncArg)?;
     match version {
         rustls::ProtocolVersion::TLSv1_2 => Ok(util::CONST_TLS12_STR.as_ptr() as *const c_char),
         rustls::ProtocolVersion::TLSv1_3 => Ok(util::CONST_TLS13_STR.as_ptr() as *const c_char),
@@ -2216,7 +2155,7 @@ mod util {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::libssl::err::{tabby_ERR_clear_error, tabby_ERR_get_error};
+    use crate::libssl::err::tabby_ERR_clear_error;
     use crate::libssl::x509::*;
     use libc::{c_long, c_ulong};
     use std::{ptr, str, thread};
@@ -2417,19 +2356,14 @@ mod tests {
                     return 1; // SSL handshake failed
                 }
                 let session = session.unwrap();
-                tabby_ERR_clear_error();
+
                 let _ = session.write(b"Hello server");
-                let error = tabby_ERR_get_error();
-                if error != 0 {
-                    return error;
-                }
-                tabby_ERR_clear_error();
+
                 let mut rd_buf = [0u8; 64];
                 let _ = session.read(&mut rd_buf);
-                let error = tabby_ERR_get_error();
                 let ssl_error = session.get_error();
-                if error != 0 || ssl_error != 0 {
-                    return error;
+                if ssl_error != 0 {
+                    return ssl_error as u64;
                 }
                 TabbyTestDriver::test_cipher(session.ssl, &version);
                 let _ = session.shutdown();
@@ -2482,18 +2416,14 @@ mod tests {
                 tabby_ERR_clear_error();
                 let mut rd_buf = [0u8; 64];
                 let _ = session.read(&mut rd_buf);
-                let error = tabby_ERR_get_error();
-                if error != 0 {
-                    return error;
-                }
+
                 TabbyTestDriver::test_cipher(session.ssl, &version);
                 tabby_ERR_clear_error();
                 let _ = session.write(b"Hello client");
-                let error = tabby_ERR_get_error();
                 let ssl_error = session.get_error();
                 let _ = session.shutdown();
-                if error != 0 || ssl_error != 0 {
-                    return error;
+                if ssl_error != 0 {
+                    return ssl_error as u64;
                 }
                 0
             })
