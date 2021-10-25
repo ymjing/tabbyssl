@@ -271,9 +271,9 @@ fn inner_tabby_x509_get_subject_name(
 
                         if !keyword.is_empty() {
                             if let Ok(s) = str::from_utf8(value.as_slice_less_safe()) {
-                                subject_name.push_str("/");
+                                subject_name.push('/');
                                 subject_name.push_str(keyword);
-                                subject_name.push_str("=");
+                                subject_name.push('=');
                                 subject_name.push_str(s);
                             }
                         }

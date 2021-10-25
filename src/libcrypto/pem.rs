@@ -171,7 +171,7 @@ pub(crate) fn get_certificate(rd: &mut dyn io::BufRead) -> Result<rustls::Certif
         rd,
         "-----BEGIN CERTIFICATE-----",
         "-----END CERTIFICATE-----",
-        &|v| rustls::Certificate(v),
+        &rustls::Certificate,
     )
 }
 
@@ -180,7 +180,7 @@ pub(crate) fn get_rsa_private_key(rd: &mut dyn io::BufRead) -> Result<rustls::Pr
         rd,
         "-----BEGIN RSA PRIVATE KEY-----",
         "-----END RSA PRIVATE KEY-----",
-        &|v| rustls::PrivateKey(v),
+        &rustls::PrivateKey,
     )
 }
 
@@ -189,7 +189,7 @@ pub(crate) fn get_ecdsa_private_key(rd: &mut dyn io::BufRead) -> Result<rustls::
         rd,
         "-----BEGIN PRIVATE KEY-----",
         "-----END PRIVATE KEY-----",
-        &|v| rustls::PrivateKey(v),
+        &rustls::PrivateKey,
     )
 }
 

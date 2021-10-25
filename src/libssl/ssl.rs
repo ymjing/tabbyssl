@@ -1099,7 +1099,7 @@ fn inner_tabby_ssl_ctx_check_private_key(ctx_ptr: *mut TABBY_CTX_ARC) -> InnerRe
     let ctx = sanitize_ptr_for_mut_ref(ctx_ptr)?;
     match (&ctx.certificates, &ctx.private_key) {
         (&Some(ref certs), &Some(ref key)) => {
-            let signing_key = sign::any_supported_type(&key).map_err(|_| Error::BadFuncArg)?;
+            let signing_key = sign::any_supported_type(key).map_err(|_| Error::BadFuncArg)?;
             let _ = sign::CertifiedKey::new(certs.clone(), signing_key)
                 .end_entity_cert()
                 .map_err(|_| Error::BadFuncArg)?; // SignError
@@ -1478,7 +1478,7 @@ pub extern "C" fn tabby_SSL_get_peer_certificate(ssl_ptr: *mut TABBY_SSL) -> *mu
 
 fn inner_tabby_ssl_get_peer_certificate(ssl_ptr: *mut TABBY_SSL) -> InnerResult<*mut TABBY_X509> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
-    let certs = get_peer_certificates(&ssl)?;
+    let certs = get_peer_certificates(ssl)?;
     let x509 = TABBY_X509::new(certs[0].clone());
     Ok(Box::into_raw(Box::new(x509)) as *mut TABBY_X509)
 }
@@ -1505,7 +1505,7 @@ fn inner_tabby_ssl_get_peer_certificates(
 ) -> InnerResult<*mut TABBY_STACK_TABBY_X509> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
 
-    let certs = get_peer_certificates(&ssl)?;
+    let certs = get_peer_certificates(ssl)?;
     let mut vec: Vec<TABBY_X509> = Vec::new();
     for cert in certs {
         let x509 = TABBY_X509::new(cert.clone());
@@ -1745,8 +1745,8 @@ pub extern "C" fn tabby_SSL_do_handshake(ssl_ptr: *mut TABBY_SSL) -> c_int {
 }
 
 fn inner_tabby_ssl_do_handshake(ssl_ptr: *mut TABBY_SSL) -> InnerResult<c_int> {
-    let mut ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
-    let _ = setup_ssl_if_ready(&mut ssl)?;
+    let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
+    let _ = setup_ssl_if_ready(ssl)?;
     Ok(SSL_SUCCESS)
 }
 
@@ -1786,9 +1786,9 @@ pub extern "C" fn tabby_SSL_connect(ssl_ptr: *mut TABBY_SSL) -> c_int {
 }
 
 fn inner_tabby_ssl_connect(ssl_ptr: *mut TABBY_SSL) -> InnerResult<c_int> {
-    let mut ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
+    let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     ssl.mode = ClientOrServerMode::Client;
-    let _ = setup_ssl_if_ready(&mut ssl)?;
+    let _ = setup_ssl_if_ready(ssl)?;
     Ok(SSL_SUCCESS)
 }
 
@@ -1807,9 +1807,9 @@ pub extern "C" fn tabby_SSL_accept(ssl_ptr: *mut TABBY_SSL) -> c_int {
 }
 
 fn inner_tabby_ssl_accept(ssl_ptr: *mut TABBY_SSL) -> InnerResult<c_int> {
-    let mut ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
+    let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     ssl.mode = ClientOrServerMode::Server;
-    let _ = setup_ssl_if_ready(&mut ssl)?;
+    let _ = setup_ssl_if_ready(ssl)?;
     Ok(SSL_SUCCESS)
 }
 
@@ -1870,11 +1870,8 @@ fn inner_tabby_ssl_read(
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     let buf = unsafe { slice::from_raw_parts_mut(buf_ptr, buf_len as usize) };
     ssl.ssl_read(buf).map(|ret| ret as c_int).or_else(|e| {
-        if let Error::Io(k) = e {
-            match k {
-                io::ErrorKind::WouldBlock => return Ok(SSL_ERROR),
-                _ => (),
-            }
+        if let Error::Io(io::ErrorKind::WouldBlock) = e {
+            return Ok(SSL_ERROR);
         }
         ssl.last_error = e.clone();
         Err(e)
@@ -1912,11 +1909,8 @@ fn inner_tabby_ssl_write(
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     let buf = unsafe { slice::from_raw_parts(buf_ptr, buf_len as usize) };
     ssl.ssl_write(buf).map(|ret| ret as c_int).or_else(|e| {
-        if let Error::Io(k) = e {
-            match k {
-                io::ErrorKind::WouldBlock => return Ok(SSL_ERROR),
-                _ => (),
-            }
+        if let Error::Io(io::ErrorKind::WouldBlock) = e {
+            return Ok(SSL_ERROR);
         }
         ssl.last_error = e.clone();
         Err(e)
@@ -1939,11 +1933,8 @@ pub extern "C" fn tabby_SSL_flush(ssl_ptr: *mut TABBY_SSL) -> c_int {
 fn inner_tabby_ssl_flush(ssl_ptr: *mut TABBY_SSL) -> InnerResult<c_int> {
     let ssl = sanitize_ptr_for_mut_ref(ssl_ptr)?;
     ssl.ssl_flush().map(|_| SSL_SUCCESS).or_else(|e| {
-        if let Error::Io(k) = e {
-            match k {
-                io::ErrorKind::WouldBlock => return Ok(SSL_ERROR),
-                _ => (),
-            }
+        if let Error::Io(io::ErrorKind::WouldBlock) = e {
+            return Ok(SSL_ERROR);
         }
         ssl.last_error = e.clone();
         Err(e)
@@ -1993,11 +1984,8 @@ fn inner_tabby_ssl_write_early_data(
             Ok(SSL_SUCCESS)
         }
         Err(e) => {
-            if let Error::Io(k) = e {
-                match k {
-                    io::ErrorKind::WouldBlock => return Ok(SSL_ERROR),
-                    _ => (),
-                }
+            if let Error::Io(io::ErrorKind::WouldBlock) = e {
+                return Ok(SSL_ERROR);
             }
             ssl.last_error = e.clone();
             Err(e)

@@ -178,10 +178,10 @@ impl<'a> OpaquePointerGuard for TABBY_BIO<'a> {
 
 impl<'a> TABBY_BIO<'a> {
     fn is_initialized(&self) -> bool {
-        match self.inner {
-            MesalinkBioInner::File(_) | MesalinkBioInner::Mem(_) => true,
-            _ => false,
-        }
+        matches!(
+            self.inner,
+            MesalinkBioInner::File(_) | MesalinkBioInner::Mem(_)
+        )
     }
 }
 
@@ -297,9 +297,9 @@ fn inner_tabby_bio_read(
         return Err(Error::NullPointer);
     }
     let buf_ptr = buf_ptr as *mut u8;
-    let mut buf = unsafe { slice::from_raw_parts_mut(buf_ptr, len as usize) };
+    let buf = unsafe { slice::from_raw_parts_mut(buf_ptr, len as usize) };
     let read_fn = &bio.method.read;
-    let ret = read_fn(&mut bio.inner, &mut buf).map_err(|e| Error::Io(e.kind()))?;
+    let ret = read_fn(&mut bio.inner, buf).map_err(|e| Error::Io(e.kind()))?;
     Ok(ret as c_int)
 }
 
@@ -333,9 +333,9 @@ fn inner_tabby_bio_gets(
         return Err(Error::NullPointer);
     }
     let buf_ptr = buf_ptr as *mut u8;
-    let mut buf = unsafe { slice::from_raw_parts_mut(buf_ptr, size as usize) };
+    let buf = unsafe { slice::from_raw_parts_mut(buf_ptr, size as usize) };
     let gets_fn = &bio.method.gets;
-    let ret = gets_fn(&mut bio.inner, &mut buf).map_err(|e| Error::Io(e.kind()))?;
+    let ret = gets_fn(&mut bio.inner, buf).map_err(|e| Error::Io(e.kind()))?;
     Ok(ret as c_int)
 }
 
@@ -371,7 +371,7 @@ fn inner_tabby_bio_write(
     let buf_ptr = buf_ptr as *const u8;
     let buf = unsafe { slice::from_raw_parts(buf_ptr, len as usize) };
     let write_fn = &bio.method.write;
-    let ret = write_fn(&mut bio.inner, &buf).map_err(|e| Error::Io(e.kind()))?;
+    let ret = write_fn(&mut bio.inner, buf).map_err(|e| Error::Io(e.kind()))?;
     Ok(ret as c_int)
 }
 
@@ -400,7 +400,7 @@ fn inner_tabby_bio_puts(bio_ptr: *mut TABBY_BIO<'_>, buf_ptr: *const c_char) -> 
     let buf_ptr = buf_ptr as *const u8;
     let buf = unsafe { slice::from_raw_parts(buf_ptr, strlen + 1) };
     let puts_fn = &bio.method.puts;
-    let ret = puts_fn(&mut bio.inner, &buf).map_err(|e| Error::Io(e.kind()))?;
+    let ret = puts_fn(&mut bio.inner, buf).map_err(|e| Error::Io(e.kind()))?;
     Ok(ret as c_int)
 }
 
