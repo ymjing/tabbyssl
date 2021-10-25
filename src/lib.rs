@@ -23,6 +23,21 @@
 #![deny(trivial_numeric_casts, unused_qualifications)]
 #![deny(anonymous_parameters, unused_import_braces, unused_results, warnings)]
 
+extern crate ring;
+extern crate rustls;
+extern crate rustls_pemfile;
+extern crate sct;
+extern crate untrusted;
+extern crate webpki;
+extern crate webpki_roots;
+
+extern crate base64;
+extern crate bitflags;
+extern crate env_logger;
+extern crate lazy_static;
+extern crate libc;
+extern crate thiserror;
+
 use ring::rand;
 use ring::rand::SecureRandom;
 

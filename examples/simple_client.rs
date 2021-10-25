@@ -4,6 +4,8 @@
  * All rights reserved.
  */
 
+extern crate tabbyssl;
+
 use std::os::unix::io::AsRawFd;
 use std::{net, str};
 use tabbyssl::libssl::ssl::*;

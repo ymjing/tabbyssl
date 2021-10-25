@@ -40,5 +40,34 @@ untrusted = "0.7.1"
 thiserror = "1.0.30"
 
 [[bin]]
-name = "tabby_client"
-path = "src/main.rs"
+name = "simple_client"
+path = "examples/simple_client.rs"
+
+[package.metadata.raze]
+workspace_path = "//cargo"
+default_gen_buildrs = false
+package_aliases_dir = "cargo"
+targets = [
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+    "x86_64-unknown-linux-gnu",
+]
+genmode = "Remote"
+
+[package.metadata.raze.crates.ring.'0.16.20']
+gen_buildrs = true
+data_attr = "glob([\"src/**/*.der\"])"
+
+[package.metadata.raze.crates.webpki.'0.22.0']
+gen_buildrs = true
+data_attr = "glob([\"src/**/*.der\"])"
+
+[package.metadata.raze.crates.log.'0.4.14']
+additional_flags = [
+    "--cfg=atomic_cas"
+]
+
+[package.metadata.raze.crates.proc-macro2.'1.0.30']
+additional_flags = [
+    "--cfg=use_proc_macro",
+]
