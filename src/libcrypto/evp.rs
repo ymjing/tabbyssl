@@ -14,20 +14,20 @@ use rustls;
 /// A structure for storing keys. Currently only RSA/ECC private keys are
 /// supported.
 #[allow(non_camel_case_types)]
-pub struct TABBY_EVP_PKEY {
+pub struct EVP_PKEY {
     magic: [u8; MAGIC_SIZE],
     pub inner: rustls::PrivateKey,
 }
 
-impl OpaquePointerGuard for TABBY_EVP_PKEY {
+impl OpaquePointerGuard for EVP_PKEY {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }
 }
 
-impl TABBY_EVP_PKEY {
+impl EVP_PKEY {
     pub(crate) fn new(pkey: rustls::PrivateKey) -> Self {
-        TABBY_EVP_PKEY {
+        EVP_PKEY {
             magic: *MAGIC,
             inner: pkey,
         }
@@ -42,11 +42,11 @@ impl TABBY_EVP_PKEY {
 /// int EVP_PKEY_free(EVP_PKEY *p);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_EVP_PKEY_free(pkey_ptr: *mut TABBY_EVP_PKEY) {
-    let _ = check_inner_result!(inner_tabby_evp_pkey_free(pkey_ptr), CRYPTO_FAILURE);
+pub extern "C" fn EVP_PKEY_free(pkey_ptr: *mut EVP_PKEY) {
+    let _ = check_inner_result!(inner_evp_pkey_free(pkey_ptr), CRYPTO_FAILURE);
 }
 
-fn inner_tabby_evp_pkey_free(pkey_ptr: *mut TABBY_EVP_PKEY) -> InnerResult<c_int> {
+fn inner_evp_pkey_free(pkey_ptr: *mut EVP_PKEY) -> InnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(pkey_ptr)?;
     let _ = unsafe { Box::from_raw(pkey_ptr) };
     Ok(CRYPTO_SUCCESS)

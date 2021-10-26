@@ -5,7 +5,7 @@
  */
 
 use super::err::{Error, InnerResult};
-use super::x509::{TABBY_X509, TABBY_X509_NAME};
+use super::x509::{X509, X509_NAME};
 use super::{SSL_FAILURE, SSL_SUCCESS};
 use crate::error_san::*;
 use crate::{OpaquePointerGuard, MAGIC, MAGIC_SIZE};
@@ -13,26 +13,25 @@ use libc::c_int;
 use std::ptr;
 
 // ---------------------------------------
-// STACK for TABBY_X509
+// STACK for X509
 // ---------------------------------------
 
 /// An OpenSSL STACK_OF(X509) object
-#[repr(C)]
 #[allow(non_camel_case_types)]
-pub struct TABBY_STACK_TABBY_X509 {
+pub struct STACK_X509 {
     magic: [u8; MAGIC_SIZE],
-    pub stack: Vec<TABBY_X509>,
+    pub(crate) stack: Vec<X509>,
 }
 
-impl OpaquePointerGuard for TABBY_STACK_TABBY_X509 {
+impl OpaquePointerGuard for STACK_X509 {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }
 }
 
-impl TABBY_STACK_TABBY_X509 {
-    pub(crate) fn new(names: Vec<TABBY_X509>) -> TABBY_STACK_TABBY_X509 {
-        TABBY_STACK_TABBY_X509 {
+impl STACK_X509 {
+    pub(crate) fn new(names: Vec<X509>) -> STACK_X509 {
+        STACK_X509 {
             magic: *MAGIC,
             stack: names,
         }
@@ -47,9 +46,9 @@ impl TABBY_STACK_TABBY_X509 {
 /// STACK_OF(X509) *sk_X509_new_null(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_sk_X509_new_null() -> *mut TABBY_STACK_TABBY_X509 {
-    let stack = TABBY_STACK_TABBY_X509::new(vec![]);
-    Box::into_raw(Box::new(stack)) as *mut TABBY_STACK_TABBY_X509
+pub extern "C" fn sk_X509_new_null() -> *mut STACK_X509 {
+    let stack = STACK_X509::new(vec![]);
+    Box::into_raw(Box::new(stack)) as *mut STACK_X509
 }
 
 /// `sk_X509_num` - returns the number of elements in sk or -1 if sk is NULL.
@@ -60,12 +59,12 @@ pub extern "C" fn tabby_sk_X509_new_null() -> *mut TABBY_STACK_TABBY_X509 {
 /// int sk_X509_num(const STACK_OF(X509) *sk);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_sk_X509_num(stack_ptr: *const TABBY_STACK_TABBY_X509) -> c_int {
-    check_inner_result!(inner_tabby_sk_X509_num(stack_ptr), SSL_FAILURE)
+pub extern "C" fn sk_X509_num(stack_ptr: *const STACK_X509) -> c_int {
+    check_inner_result!(inner_sk_X509_num(stack_ptr), SSL_FAILURE)
 }
 
 #[allow(non_snake_case)]
-fn inner_tabby_sk_X509_num(stack_ptr: *const TABBY_STACK_TABBY_X509) -> InnerResult<c_int> {
+fn inner_sk_X509_num(stack_ptr: *const STACK_X509) -> InnerResult<c_int> {
     let stack = sanitize_const_ptr_for_ref(stack_ptr)?;
     Ok(stack.stack.len() as c_int)
 }
@@ -79,21 +78,15 @@ fn inner_tabby_sk_X509_num(stack_ptr: *const TABBY_STACK_TABBY_X509) -> InnerRes
 /// X509 *sk_X509_value(const STACK_OF(X509) *sk, int idx);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_sk_X509_value(
-    stack_ptr: *const TABBY_STACK_TABBY_X509,
-    index: c_int,
-) -> *const TABBY_X509 {
-    check_inner_result!(inner_tabby_sk_X509_value(stack_ptr, index), ptr::null())
+pub extern "C" fn sk_X509_value(stack_ptr: *const STACK_X509, index: c_int) -> *const X509 {
+    check_inner_result!(inner_sk_X509_value(stack_ptr, index), ptr::null())
 }
 
 #[allow(non_snake_case)]
-fn inner_tabby_sk_X509_value(
-    stack_ptr: *const TABBY_STACK_TABBY_X509,
-    index: c_int,
-) -> InnerResult<*const TABBY_X509> {
+fn inner_sk_X509_value(stack_ptr: *const STACK_X509, index: c_int) -> InnerResult<*const X509> {
     let stack = sanitize_const_ptr_for_ref(stack_ptr)?;
     let item = stack.stack.get(index as usize).ok_or(Error::BadFuncArg)?;
-    Ok(item as *const TABBY_X509)
+    Ok(item as *const X509)
 }
 
 /// `sk_X509_push` - appends ptr to sk.
@@ -104,18 +97,12 @@ fn inner_tabby_sk_X509_value(
 /// int sk_X509_push(STACK_OF(X509) *sk, const X509 *ptr);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_sk_X509_push(
-    stack_ptr: *mut TABBY_STACK_TABBY_X509,
-    item_ptr: *const TABBY_X509,
-) -> c_int {
-    check_inner_result!(inner_tabby_sk_X509_push(stack_ptr, item_ptr), SSL_FAILURE)
+pub extern "C" fn sk_X509_push(stack_ptr: *mut STACK_X509, item_ptr: *const X509) -> c_int {
+    check_inner_result!(inner_sk_X509_push(stack_ptr, item_ptr), SSL_FAILURE)
 }
 
 #[allow(non_snake_case)]
-fn inner_tabby_sk_X509_push(
-    stack_ptr: *mut TABBY_STACK_TABBY_X509,
-    item_ptr: *const TABBY_X509,
-) -> InnerResult<c_int> {
+fn inner_sk_X509_push(stack_ptr: *mut STACK_X509, item_ptr: *const X509) -> InnerResult<c_int> {
     let stack = sanitize_ptr_for_mut_ref(stack_ptr)?;
     let item = sanitize_const_ptr_for_ref(item_ptr)?;
     stack.stack.push(item.clone());
@@ -131,38 +118,37 @@ fn inner_tabby_sk_X509_push(
 /// void sk_X509_free(const STACK_OF(X509) *sk);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_sk_X509_free(stack_ptr: *mut TABBY_STACK_TABBY_X509) {
-    let _ = check_inner_result!(inner_tabby_sk_X509_free(stack_ptr), SSL_FAILURE);
+pub extern "C" fn sk_X509_free(stack_ptr: *mut STACK_X509) {
+    let _ = check_inner_result!(inner_sk_X509_free(stack_ptr), SSL_FAILURE);
 }
 
 #[allow(non_snake_case)]
-fn inner_tabby_sk_X509_free(stack_ptr: *mut TABBY_STACK_TABBY_X509) -> InnerResult<c_int> {
+fn inner_sk_X509_free(stack_ptr: *mut STACK_X509) -> InnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(stack_ptr)?;
     let _ = unsafe { Box::from_raw(stack_ptr) };
     Ok(SSL_SUCCESS)
 }
 
 // ---------------------------------------
-// STACK for TABBY_X509_NAME
+// STACK for X509_NAME
 // ---------------------------------------
 
 /// An OpenSSL STACK_OF(X509_NAME) object
-#[repr(C)]
 #[allow(non_camel_case_types)]
-pub struct TABBY_STACK_TABBY_X509_NAME {
+pub struct STACK_X509_NAME {
     magic: [u8; MAGIC_SIZE],
-    pub stack: Vec<TABBY_X509_NAME>,
+    pub(crate) stack: Vec<X509_NAME>,
 }
 
-impl OpaquePointerGuard for TABBY_STACK_TABBY_X509_NAME {
+impl OpaquePointerGuard for STACK_X509_NAME {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }
 }
 
-impl TABBY_STACK_TABBY_X509_NAME {
-    pub fn new(names: Vec<TABBY_X509_NAME>) -> TABBY_STACK_TABBY_X509_NAME {
-        TABBY_STACK_TABBY_X509_NAME {
+impl STACK_X509_NAME {
+    pub fn new(names: Vec<X509_NAME>) -> STACK_X509_NAME {
+        STACK_X509_NAME {
             magic: *MAGIC,
             stack: names,
         }
@@ -177,9 +163,9 @@ impl TABBY_STACK_TABBY_X509_NAME {
 /// STACK_OF(X509_NAME) *sk_X509_NAME_new_null(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_sk_X509_NAME_new_null() -> *mut TABBY_STACK_TABBY_X509_NAME {
-    let stack = TABBY_STACK_TABBY_X509_NAME::new(vec![]);
-    Box::into_raw(Box::new(stack)) as *mut TABBY_STACK_TABBY_X509_NAME
+pub extern "C" fn sk_X509_NAME_new_null() -> *mut STACK_X509_NAME {
+    let stack = STACK_X509_NAME::new(vec![]);
+    Box::into_raw(Box::new(stack)) as *mut STACK_X509_NAME
 }
 
 /// `sk_X509_NAME_num` - returns the number of elements in sk or -1 if sk is NULL..
@@ -190,14 +176,12 @@ pub extern "C" fn tabby_sk_X509_NAME_new_null() -> *mut TABBY_STACK_TABBY_X509_N
 /// int sk_X509_NAME_num(const STACK_OF(X509_NAME) *sk);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_sk_X509_NAME_num(stack_ptr: *const TABBY_STACK_TABBY_X509_NAME) -> c_int {
-    check_inner_result!(inner_tabby_sk_X509_NAME_num(stack_ptr), SSL_FAILURE)
+pub extern "C" fn sk_X509_NAME_num(stack_ptr: *const STACK_X509_NAME) -> c_int {
+    check_inner_result!(inner_sk_X509_NAME_num(stack_ptr), SSL_FAILURE)
 }
 
 #[allow(non_snake_case)]
-fn inner_tabby_sk_X509_NAME_num(
-    stack_ptr: *const TABBY_STACK_TABBY_X509_NAME,
-) -> InnerResult<c_int> {
+fn inner_sk_X509_NAME_num(stack_ptr: *const STACK_X509_NAME) -> InnerResult<c_int> {
     let stack = sanitize_const_ptr_for_ref(stack_ptr)?;
     Ok(stack.stack.len() as c_int)
 }
@@ -211,24 +195,21 @@ fn inner_tabby_sk_X509_NAME_num(
 /// X509_NAME *sk_X509_NAME_value(const STACK_OF(X509_NAME) *sk, int idx);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_sk_X509_NAME_value(
-    stack_ptr: *const TABBY_STACK_TABBY_X509_NAME,
+pub extern "C" fn sk_X509_NAME_value(
+    stack_ptr: *const STACK_X509_NAME,
     index: c_int,
-) -> *const TABBY_X509_NAME {
-    check_inner_result!(
-        inner_tabby_sk_X509_NAME_value(stack_ptr, index),
-        ptr::null()
-    )
+) -> *const X509_NAME {
+    check_inner_result!(inner_sk_X509_NAME_value(stack_ptr, index), ptr::null())
 }
 
 #[allow(non_snake_case)]
-fn inner_tabby_sk_X509_NAME_value(
-    stack_ptr: *const TABBY_STACK_TABBY_X509_NAME,
+fn inner_sk_X509_NAME_value(
+    stack_ptr: *const STACK_X509_NAME,
     index: c_int,
-) -> InnerResult<*const TABBY_X509_NAME> {
+) -> InnerResult<*const X509_NAME> {
     let stack = sanitize_const_ptr_for_ref(stack_ptr)?;
     let item = stack.stack.get(index as usize).ok_or(Error::BadFuncArg)?;
-    Ok(item as *const TABBY_X509_NAME)
+    Ok(item as *const X509_NAME)
 }
 
 /// `sk_X509_NAME_push` - appends ptr to sk.
@@ -239,20 +220,17 @@ fn inner_tabby_sk_X509_NAME_value(
 /// int sk_X509_NAME_push(STACK_OF(X509_NAME) *sk, const X509_NAME *ptr);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_sk_X509_NAME_push(
-    stack_ptr: *mut TABBY_STACK_TABBY_X509_NAME,
-    item_ptr: *const TABBY_X509_NAME,
+pub extern "C" fn sk_X509_NAME_push(
+    stack_ptr: *mut STACK_X509_NAME,
+    item_ptr: *const X509_NAME,
 ) -> c_int {
-    check_inner_result!(
-        inner_tabby_sk_X509_NAME_push(stack_ptr, item_ptr),
-        SSL_FAILURE
-    )
+    check_inner_result!(inner_sk_X509_NAME_push(stack_ptr, item_ptr), SSL_FAILURE)
 }
 
 #[allow(non_snake_case)]
-fn inner_tabby_sk_X509_NAME_push(
-    stack_ptr: *mut TABBY_STACK_TABBY_X509_NAME,
-    item_ptr: *const TABBY_X509_NAME,
+fn inner_sk_X509_NAME_push(
+    stack_ptr: *mut STACK_X509_NAME,
+    item_ptr: *const X509_NAME,
 ) -> InnerResult<c_int> {
     let stack = sanitize_ptr_for_mut_ref(stack_ptr)?;
     let item = sanitize_const_ptr_for_ref(item_ptr)?;
@@ -269,14 +247,12 @@ fn inner_tabby_sk_X509_NAME_push(
 /// void sk_X509_NAME_free(const STACK_OF(X509_NAME) *sk);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_sk_X509_NAME_free(stack_ptr: *mut TABBY_STACK_TABBY_X509_NAME) {
-    let _ = check_inner_result!(inner_tabby_sk_X509_NAME_free(stack_ptr), SSL_FAILURE);
+pub extern "C" fn sk_X509_NAME_free(stack_ptr: *mut STACK_X509_NAME) {
+    let _ = check_inner_result!(inner_sk_X509_NAME_free(stack_ptr), SSL_FAILURE);
 }
 
 #[allow(non_snake_case)]
-fn inner_tabby_sk_X509_NAME_free(
-    stack_ptr: *mut TABBY_STACK_TABBY_X509_NAME,
-) -> InnerResult<c_int> {
+fn inner_sk_X509_NAME_free(stack_ptr: *mut STACK_X509_NAME) -> InnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(stack_ptr)?;
     let _ = unsafe { Box::from_raw(stack_ptr) };
     Ok(SSL_SUCCESS)
@@ -293,49 +269,46 @@ mod tests {
 
     #[test]
     fn x509_sk() {
-        let stack_ptr: *mut TABBY_STACK_TABBY_X509 = tabby_sk_X509_new_null();
+        let stack_ptr: *mut STACK_X509 = sk_X509_new_null();
         let mut certs_io = BufReader::new(File::open("tests/end.fullchain").unwrap());
         let certs = pemfile::certs(&mut certs_io).unwrap();
         let certs_count = certs.len();
         assert_eq!(true, certs_count > 0);
         for cert in certs.into_iter() {
-            let x509 = TABBY_X509::new(Certificate(cert));
-            let x509_ptr = Box::into_raw(Box::new(x509)) as *mut TABBY_X509;
-            assert_eq!(SSL_SUCCESS, tabby_sk_X509_push(stack_ptr, x509_ptr));
+            let x509 = X509::new(Certificate(cert));
+            let x509_ptr = Box::into_raw(Box::new(x509)) as *mut X509;
+            assert_eq!(SSL_SUCCESS, sk_X509_push(stack_ptr, x509_ptr));
             let _ = unsafe { Box::from_raw(x509_ptr) }; // push() clones the X509 object
         }
-        assert_eq!(certs_count as c_int, tabby_sk_X509_num(stack_ptr));
+        assert_eq!(certs_count as c_int, sk_X509_num(stack_ptr));
         for index in 0..certs_count {
-            let x509_ptr = tabby_sk_X509_value(stack_ptr, index as c_int);
+            let x509_ptr = sk_X509_value(stack_ptr, index as c_int);
             assert_ne!(x509_ptr, ptr::null_mut());
         }
-        tabby_sk_X509_free(stack_ptr);
+        sk_X509_free(stack_ptr);
     }
 
     #[test]
     fn x509_name_sk() {
-        let stack_ptr: *mut TABBY_STACK_TABBY_X509_NAME = tabby_sk_X509_NAME_new_null();
+        let stack_ptr: *mut STACK_X509_NAME = sk_X509_NAME_new_null();
         let names = ["*.google.com", "youtube.com", "map.google.com"];
         for name in names.iter() {
-            let x509_name = TABBY_X509_NAME::new(name.as_bytes());
-            let x509_name_ptr = Box::into_raw(Box::new(x509_name)) as *mut TABBY_X509_NAME;
-            assert_eq!(
-                SSL_SUCCESS,
-                tabby_sk_X509_NAME_push(stack_ptr, x509_name_ptr)
-            );
+            let x509_name = X509_NAME::new(name.as_bytes());
+            let x509_name_ptr = Box::into_raw(Box::new(x509_name)) as *mut X509_NAME;
+            assert_eq!(SSL_SUCCESS, sk_X509_NAME_push(stack_ptr, x509_name_ptr));
             let _ = unsafe { Box::from_raw(x509_name_ptr) }; // push() clones the X509_NAME object
         }
-        assert_eq!(names.len() as c_int, tabby_sk_X509_NAME_num(stack_ptr));
+        assert_eq!(names.len() as c_int, sk_X509_NAME_num(stack_ptr));
         for index in 0..names.len() {
-            let x509_name_ptr = tabby_sk_X509_NAME_value(stack_ptr, index as c_int);
+            let x509_name_ptr = sk_X509_NAME_value(stack_ptr, index as c_int);
             assert_ne!(x509_name_ptr, ptr::null_mut());
         }
-        tabby_sk_X509_NAME_free(stack_ptr);
+        sk_X509_NAME_free(stack_ptr);
     }
 
     #[test]
     fn sk_free_null_pointer() {
-        tabby_sk_X509_free(ptr::null_mut());
-        tabby_sk_X509_NAME_free(ptr::null_mut());
+        sk_X509_free(ptr::null_mut());
+        sk_X509_NAME_free(ptr::null_mut());
     }
 }

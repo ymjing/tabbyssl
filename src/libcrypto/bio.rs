@@ -58,14 +58,14 @@ impl<'a> DerefMut for MesalinkBioInner<'a> {
 #[allow(non_camel_case_types)]
 #[repr(C)]
 #[derive(PartialEq)]
-pub enum TABBY_BIO_METHOD {
+pub enum BIO_METHOD {
     File,
     Mem,
     Unspecified,
 }
 
-static TABBY_BIO_METHOD_FILE: TABBY_BIO_METHOD = TABBY_BIO_METHOD::File;
-static TABBY_BIO_METHOD_MEM: TABBY_BIO_METHOD = TABBY_BIO_METHOD::Mem;
+static BIO_METHOD_FILE: BIO_METHOD = BIO_METHOD::File;
+static BIO_METHOD_MEM: BIO_METHOD = BIO_METHOD::Mem;
 
 #[doc(hidden)]
 #[allow(non_camel_case_types)]
@@ -128,11 +128,11 @@ fn mem_gets<'a>(inner: &mut MesalinkBioInner<'a>, buf: &mut [u8]) -> io::Result<
     Ok(pos + 1) // include '\0' at the end
 }
 
-impl<'a> From<&TABBY_BIO_METHOD> for MesalinkBioFunctions<'a> {
-    fn from(m: &TABBY_BIO_METHOD) -> MesalinkBioFunctions<'a> {
+impl<'a> From<&BIO_METHOD> for MesalinkBioFunctions<'a> {
+    fn from(m: &BIO_METHOD) -> MesalinkBioFunctions<'a> {
         let gets = match *m {
-            TABBY_BIO_METHOD::File => file_gets,
-            TABBY_BIO_METHOD::Mem => mem_gets,
+            BIO_METHOD::File => file_gets,
+            BIO_METHOD::Mem => mem_gets,
             _ => unimplemented!(),
         };
         MesalinkBioFunctions {
@@ -163,20 +163,20 @@ bitflags! {
 /// An I/O abstraction, it hides many of the underlying I/O details from an
 /// application.
 #[allow(non_camel_case_types)]
-pub struct TABBY_BIO<'a> {
+pub struct BIO<'a> {
     magic: [u8; MAGIC_SIZE],
     inner: MesalinkBioInner<'a>,
     method: MesalinkBioFunctions<'a>,
     flags: BioFlags,
 }
 
-impl<'a> OpaquePointerGuard for TABBY_BIO<'a> {
+impl<'a> OpaquePointerGuard for BIO<'a> {
     fn check_magic(&self) -> bool {
         self.magic == *MAGIC
     }
 }
 
-impl<'a> TABBY_BIO<'a> {
+impl<'a> BIO<'a> {
     fn is_initialized(&self) -> bool {
         matches!(
             self.inner,
@@ -185,13 +185,13 @@ impl<'a> TABBY_BIO<'a> {
     }
 }
 
-impl<'a> Read for TABBY_BIO<'a> {
+impl<'a> Read for BIO<'a> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.inner.read(buf)
     }
 }
 
-impl<'a> Write for TABBY_BIO<'a> {
+impl<'a> Write for BIO<'a> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.inner.write(buf)
     }
@@ -201,7 +201,7 @@ impl<'a> Write for TABBY_BIO<'a> {
     }
 }
 
-impl<'a> Seek for TABBY_BIO<'a> {
+impl<'a> Seek for BIO<'a> {
     fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
         self.inner.seek(pos)
     }
@@ -215,27 +215,27 @@ impl<'a> Seek for TABBY_BIO<'a> {
 /// BIO *BIO_new(BIO_METHOD *type);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_new<'a>(method_ptr: *const TABBY_BIO_METHOD) -> *mut TABBY_BIO<'a> {
-    check_inner_result!(inner_tabby_bio_new(method_ptr), ptr::null_mut())
+pub extern "C" fn BIO_new<'a>(method_ptr: *const BIO_METHOD) -> *mut BIO<'a> {
+    check_inner_result!(inner_bio_new(method_ptr), ptr::null_mut())
 }
 
-fn inner_tabby_bio_new<'a>(method_ptr: *const TABBY_BIO_METHOD) -> InnerResult<*mut TABBY_BIO<'a>> {
+fn inner_bio_new<'a>(method_ptr: *const BIO_METHOD) -> InnerResult<*mut BIO<'a>> {
     if method_ptr.is_null() {
         return Err(Error::NullPointer);
     }
-    if method_ptr != (&TABBY_BIO_METHOD_FILE as *const TABBY_BIO_METHOD)
-        && method_ptr != (&TABBY_BIO_METHOD_MEM as *const TABBY_BIO_METHOD)
+    if method_ptr != (&BIO_METHOD_FILE as *const BIO_METHOD)
+        && method_ptr != (&BIO_METHOD_MEM as *const BIO_METHOD)
     {
         return Err(Error::BadFuncArg);
     }
     let method = unsafe { &*method_ptr };
-    let bio = TABBY_BIO {
+    let bio = BIO {
         magic: *MAGIC,
         inner: MesalinkBioInner::Unspecified,
         method: method.into(),
         flags: BioFlags::BIO_CLOSE,
     };
-    let bio_ptr = Box::into_raw(Box::new(bio)) as *mut TABBY_BIO<'_>;
+    let bio_ptr = Box::into_raw(Box::new(bio)) as *mut BIO<'_>;
     Ok(bio_ptr)
 }
 
@@ -247,11 +247,11 @@ fn inner_tabby_bio_new<'a>(method_ptr: *const TABBY_BIO_METHOD) -> InnerResult<*
 /// int BIO_free(BIO *a);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_free(bio_ptr: *mut TABBY_BIO<'_>) {
-    let _ = check_inner_result!(inner_tabby_bio_free(bio_ptr), CRYPTO_FAILURE);
+pub extern "C" fn BIO_free(bio_ptr: *mut BIO<'_>) {
+    let _ = check_inner_result!(inner_bio_free(bio_ptr), CRYPTO_FAILURE);
 }
 
-fn inner_tabby_bio_free(bio_ptr: *mut TABBY_BIO<'_>) -> InnerResult<c_int> {
+fn inner_bio_free(bio_ptr: *mut BIO<'_>) -> InnerResult<c_int> {
     let _ = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let mut bio = unsafe { Box::from_raw(bio_ptr) };
     let inner = mem::replace(&mut bio.inner, MesalinkBioInner::Unspecified);
@@ -275,19 +275,11 @@ fn inner_tabby_bio_free(bio_ptr: *mut TABBY_BIO<'_>) -> InnerResult<c_int> {
 /// int BIO_read(BIO *b, void *buf, int len);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_read(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    buf_ptr: *mut c_void,
-    len: c_int,
-) -> c_int {
-    check_inner_result!(inner_tabby_bio_read(bio_ptr, buf_ptr, len), -1)
+pub extern "C" fn BIO_read(bio_ptr: *mut BIO<'_>, buf_ptr: *mut c_void, len: c_int) -> c_int {
+    check_inner_result!(inner_bio_read(bio_ptr, buf_ptr, len), -1)
 }
 
-fn inner_tabby_bio_read(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    buf_ptr: *mut c_void,
-    len: c_int,
-) -> InnerResult<c_int> {
+fn inner_bio_read(bio_ptr: *mut BIO<'_>, buf_ptr: *mut c_void, len: c_int) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     if !bio.is_initialized() {
         // Mem or file not assigned yet
@@ -311,19 +303,11 @@ fn inner_tabby_bio_read(
 /// int BIO_gets(BIO *b, char *buf, int size);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_gets(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    buf_ptr: *mut c_char,
-    size: c_int,
-) -> c_int {
-    check_inner_result!(inner_tabby_bio_gets(bio_ptr, buf_ptr, size), -1)
+pub extern "C" fn BIO_gets(bio_ptr: *mut BIO<'_>, buf_ptr: *mut c_char, size: c_int) -> c_int {
+    check_inner_result!(inner_bio_gets(bio_ptr, buf_ptr, size), -1)
 }
 
-fn inner_tabby_bio_gets(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    buf_ptr: *mut c_char,
-    size: c_int,
-) -> InnerResult<c_int> {
+fn inner_bio_gets(bio_ptr: *mut BIO<'_>, buf_ptr: *mut c_char, size: c_int) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     if !bio.is_initialized() {
         // Mem or file not assigned yet
@@ -347,16 +331,12 @@ fn inner_tabby_bio_gets(
 /// int BIO_write(BIO *b, void *buf, int len);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_write(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    buf_ptr: *const c_void,
-    len: c_int,
-) -> c_int {
-    check_inner_result!(inner_tabby_bio_write(bio_ptr, buf_ptr, len), -1)
+pub extern "C" fn BIO_write(bio_ptr: *mut BIO<'_>, buf_ptr: *const c_void, len: c_int) -> c_int {
+    check_inner_result!(inner_bio_write(bio_ptr, buf_ptr, len), -1)
 }
 
-fn inner_tabby_bio_write(
-    bio_ptr: *mut TABBY_BIO<'_>,
+fn inner_bio_write(
+    bio_ptr: *mut BIO<'_>,
     buf_ptr: *const c_void,
     len: c_int,
 ) -> InnerResult<c_int> {
@@ -383,11 +363,11 @@ fn inner_tabby_bio_write(
 /// int BIO_puts(BIO *b, const char *buf);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_puts(bio_ptr: *mut TABBY_BIO<'_>, buf_ptr: *const c_char) -> c_int {
-    check_inner_result!(inner_tabby_bio_puts(bio_ptr, buf_ptr), -1)
+pub extern "C" fn BIO_puts(bio_ptr: *mut BIO<'_>, buf_ptr: *const c_char) -> c_int {
+    check_inner_result!(inner_bio_puts(bio_ptr, buf_ptr), -1)
 }
 
-fn inner_tabby_bio_puts(bio_ptr: *mut TABBY_BIO<'_>, buf_ptr: *const c_char) -> InnerResult<c_int> {
+fn inner_bio_puts(bio_ptr: *mut BIO<'_>, buf_ptr: *const c_char) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     if !bio.is_initialized() {
         // Mem or file not assigned yet
@@ -412,8 +392,8 @@ fn inner_tabby_bio_puts(bio_ptr: *mut TABBY_BIO<'_>, buf_ptr: *const c_char) -> 
 /// BIO_METHOD *BIO_s_file(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_s_file() -> *const TABBY_BIO_METHOD {
-    &TABBY_BIO_METHOD_FILE as *const TABBY_BIO_METHOD
+pub extern "C" fn BIO_s_file() -> *const BIO_METHOD {
+    &BIO_METHOD_FILE as *const BIO_METHOD
 }
 
 /// `BIO_new_file()` creates a new file BIO with mode mode the meaning of mode
@@ -426,28 +406,28 @@ pub extern "C" fn tabby_BIO_s_file() -> *const TABBY_BIO_METHOD {
 /// BIO *BIO_new_file(const char *filename, const char *mode);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_new_file<'a>(
+pub extern "C" fn BIO_new_file<'a>(
     filename_ptr: *const c_char,
     mode_ptr: *const c_char,
-) -> *mut TABBY_BIO<'a> {
+) -> *mut BIO<'a> {
     check_inner_result!(
-        inner_tabby_bio_new_filename(filename_ptr, mode_ptr),
+        inner_bio_new_filename(filename_ptr, mode_ptr),
         ptr::null_mut()
     )
 }
 
-fn inner_tabby_bio_new_filename<'a>(
+fn inner_bio_new_filename<'a>(
     filename_ptr: *const c_char,
     mode_ptr: *const c_char,
-) -> InnerResult<*mut TABBY_BIO<'a>> {
+) -> InnerResult<*mut BIO<'a>> {
     let file = open_file_from_filename_and_mode(filename_ptr, mode_ptr)?;
-    let bio = TABBY_BIO {
+    let bio = BIO {
         magic: *MAGIC,
         inner: MesalinkBioInner::File(file),
-        method: (&TABBY_BIO_METHOD_FILE).into(),
+        method: (&BIO_METHOD_FILE).into(),
         flags: BioFlags::BIO_CLOSE,
     };
-    Ok(Box::into_raw(Box::new(bio)) as *mut TABBY_BIO<'_>)
+    Ok(Box::into_raw(Box::new(bio)) as *mut BIO<'_>)
 }
 
 fn open_file_from_filename_and_mode(
@@ -488,18 +468,15 @@ fn open_file_from_filename_and_mode(
 /// BIO *BIO_read_file(const char *filename);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_read_filename(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    filename_ptr: *const c_char,
-) -> c_int {
+pub extern "C" fn BIO_read_filename(bio_ptr: *mut BIO<'_>, filename_ptr: *const c_char) -> c_int {
     check_inner_result!(
-        inner_tabby_bio_set_filename(bio_ptr, filename_ptr, b"r\0".as_ptr() as *const c_char),
+        inner_bio_set_filename(bio_ptr, filename_ptr, b"r\0".as_ptr() as *const c_char),
         CRYPTO_FAILURE
     )
 }
 
-fn inner_tabby_bio_set_filename(
-    bio_ptr: *mut TABBY_BIO<'_>,
+fn inner_bio_set_filename(
+    bio_ptr: *mut BIO<'_>,
     filename_ptr: *const c_char,
     mode_ptr: *const c_char,
 ) -> InnerResult<c_int> {
@@ -517,12 +494,9 @@ fn inner_tabby_bio_set_filename(
 /// BIO *BIO_write_file(const char *filename);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_write_filename(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    filename_ptr: *const c_char,
-) -> c_int {
+pub extern "C" fn BIO_write_filename(bio_ptr: *mut BIO<'_>, filename_ptr: *const c_char) -> c_int {
     check_inner_result!(
-        inner_tabby_bio_set_filename(bio_ptr, filename_ptr, b"w\0".as_ptr() as *const c_char),
+        inner_bio_set_filename(bio_ptr, filename_ptr, b"w\0".as_ptr() as *const c_char),
         CRYPTO_FAILURE
     )
 }
@@ -535,12 +509,9 @@ pub extern "C" fn tabby_BIO_write_filename(
 /// BIO *BIO_append_filename(const char *filename);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_append_filename(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    filename_ptr: *const c_char,
-) -> c_int {
+pub extern "C" fn BIO_append_filename(bio_ptr: *mut BIO<'_>, filename_ptr: *const c_char) -> c_int {
     check_inner_result!(
-        inner_tabby_bio_set_filename(bio_ptr, filename_ptr, b"a\0".as_ptr() as *const c_char),
+        inner_bio_set_filename(bio_ptr, filename_ptr, b"a\0".as_ptr() as *const c_char),
         CRYPTO_FAILURE
     )
 }
@@ -554,12 +525,9 @@ pub extern "C" fn tabby_BIO_append_filename(
 /// BIO *BIO_rw_file(const char *filename);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_rw_filename(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    filename_ptr: *const c_char,
-) -> c_int {
+pub extern "C" fn BIO_rw_filename(bio_ptr: *mut BIO<'_>, filename_ptr: *const c_char) -> c_int {
     check_inner_result!(
-        inner_tabby_bio_set_filename(bio_ptr, filename_ptr, b"r+\0".as_ptr() as *const c_char),
+        inner_bio_set_filename(bio_ptr, filename_ptr, b"r+\0".as_ptr() as *const c_char),
         CRYPTO_FAILURE
     )
 }
@@ -572,29 +540,23 @@ pub extern "C" fn tabby_BIO_rw_filename(
 /// BIO *BIO_new_fp(FILE *stream, int flags);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_new_fp<'a>(
-    stream: *mut libc::FILE,
-    flags: c_int,
-) -> *mut TABBY_BIO<'a> {
-    check_inner_result!(inner_tabby_bio_new_fp(stream, flags), ptr::null_mut())
+pub extern "C" fn BIO_new_fp<'a>(stream: *mut libc::FILE, flags: c_int) -> *mut BIO<'a> {
+    check_inner_result!(inner_bio_new_fp(stream, flags), ptr::null_mut())
 }
 
-fn inner_tabby_bio_new_fp<'a>(
-    stream: *mut libc::FILE,
-    flags: c_int,
-) -> InnerResult<*mut TABBY_BIO<'a>> {
+fn inner_bio_new_fp<'a>(stream: *mut libc::FILE, flags: c_int) -> InnerResult<*mut BIO<'a>> {
     if stream.is_null() {
         return Err(Error::NullPointer);
     }
     let file = unsafe { fs::File::from_file_stream(stream) };
     let flags = BioFlags::from_bits(flags as u32).ok_or(Error::BadFuncArg)?;
-    let bio = TABBY_BIO {
+    let bio = BIO {
         magic: *MAGIC,
         inner: MesalinkBioInner::File(file),
-        method: (&TABBY_BIO_METHOD_FILE).into(),
+        method: (&BIO_METHOD_FILE).into(),
         flags,
     };
-    Ok(Box::into_raw(Box::new(bio)) as *mut TABBY_BIO<'_>)
+    Ok(Box::into_raw(Box::new(bio)) as *mut BIO<'_>)
 }
 
 /// `BIO_set_fp()` sets the fp of a file BIO to `fp`.
@@ -605,12 +567,12 @@ fn inner_tabby_bio_new_fp<'a>(
 /// BIO_set_fp(BIO *b,FILE *fp, int flags);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_set_fp(bio_ptr: *mut TABBY_BIO<'_>, fp: *mut libc::FILE, flags: c_int) {
-    let _ = check_inner_result!(inner_tabby_bio_set_fp(bio_ptr, fp, flags), CRYPTO_FAILURE);
+pub extern "C" fn BIO_set_fp(bio_ptr: *mut BIO<'_>, fp: *mut libc::FILE, flags: c_int) {
+    let _ = check_inner_result!(inner_bio_set_fp(bio_ptr, fp, flags), CRYPTO_FAILURE);
 }
 
-fn inner_tabby_bio_set_fp(
-    bio_ptr: *mut TABBY_BIO<'_>,
+fn inner_bio_set_fp(
+    bio_ptr: *mut BIO<'_>,
     fp: *mut libc::FILE,
     flags: c_int,
 ) -> InnerResult<c_int> {
@@ -630,14 +592,14 @@ fn inner_tabby_bio_set_fp(
 /// int BIO_get_close(BIO *b);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_get_close(bio_ptr: *mut TABBY_BIO<'_>) -> c_int {
+pub extern "C" fn BIO_get_close(bio_ptr: *mut BIO<'_>) -> c_int {
     check_inner_result!(
-        inner_tabby_bio_get_close(bio_ptr),
+        inner_bio_get_close(bio_ptr),
         BioFlags::default().bits() as c_int
     )
 }
 
-fn inner_tabby_bio_get_close(bio_ptr: *mut TABBY_BIO<'_>) -> InnerResult<c_int> {
+fn inner_bio_get_close(bio_ptr: *mut BIO<'_>) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     Ok(bio.flags.bits() as c_int)
 }
@@ -650,15 +612,15 @@ fn inner_tabby_bio_get_close(bio_ptr: *mut TABBY_BIO<'_>) -> InnerResult<c_int> 
 /// int BIO_set_close(BIO *b, long flag);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_set_close(bio_ptr: *mut TABBY_BIO<'_>, flag: c_long) -> c_int {
+pub extern "C" fn BIO_set_close(bio_ptr: *mut BIO<'_>, flag: c_long) -> c_int {
     let _ = check_inner_result!(
-        inner_tabby_bio_set_close(bio_ptr, flag),
+        inner_bio_set_close(bio_ptr, flag),
         BioFlags::default().bits() as c_int
     );
     CRYPTO_SUCCESS
 }
 
-fn inner_tabby_bio_set_close(bio_ptr: *mut TABBY_BIO<'_>, flag: c_long) -> InnerResult<c_int> {
+fn inner_bio_set_close(bio_ptr: *mut BIO<'_>, flag: c_long) -> InnerResult<c_int> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let flag = BioFlags::from_bits(flag as u32).ok_or(Error::BadFuncArg)?;
     bio.flags = flag;
@@ -673,8 +635,8 @@ fn inner_tabby_bio_set_close(bio_ptr: *mut TABBY_BIO<'_>, flag: c_long) -> Inner
 /// BIO_METHOD *BIO_s_mem(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_s_mem() -> *const TABBY_BIO_METHOD {
-    &TABBY_BIO_METHOD_MEM as *const TABBY_BIO_METHOD
+pub extern "C" fn BIO_s_mem() -> *const BIO_METHOD {
+    &BIO_METHOD_MEM as *const BIO_METHOD
 }
 
 /// `BIO_new_mem_buf()` creates a memory BIO using `len` bytes of data at `buf`
@@ -685,10 +647,7 @@ pub extern "C" fn tabby_BIO_s_mem() -> *const TABBY_BIO_METHOD {
 /// BIO *BIO_new_mem_buf(const void *buf, int len);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_BIO_new_mem_buf<'a>(
-    buf_ptr: *mut c_void,
-    len: c_int,
-) -> *mut TABBY_BIO<'a> {
+pub extern "C" fn BIO_new_mem_buf<'a>(buf_ptr: *mut c_void, len: c_int) -> *mut BIO<'a> {
     if buf_ptr.is_null() {
         return ptr::null_mut();
     }
@@ -699,13 +658,13 @@ pub extern "C" fn tabby_BIO_new_mem_buf<'a>(
     };
     let buf_ptr = buf_ptr as *mut u8;
     let buf = unsafe { slice::from_raw_parts_mut(buf_ptr, buflen) };
-    let bio = TABBY_BIO {
+    let bio = BIO {
         magic: *MAGIC,
         inner: MesalinkBioInner::Mem(io::Cursor::new(buf)),
-        method: (&TABBY_BIO_METHOD_MEM).into(),
+        method: (&BIO_METHOD_MEM).into(),
         flags: BioFlags::default(), // TODO: support BIO_FLAGS_MEM_RDONLY
     };
-    Box::into_raw(Box::new(bio)) as *mut TABBY_BIO<'_>
+    Box::into_raw(Box::new(bio)) as *mut BIO<'_>
 }
 
 /// Helper trait for converting from FILE* in libc.
@@ -774,112 +733,112 @@ mod tests {
 
     #[test]
     fn bio_methods() {
-        assert_ne!(tabby_BIO_s_file(), ptr::null());
-        assert_ne!(tabby_BIO_s_mem(), ptr::null());
+        assert_ne!(BIO_s_file(), ptr::null());
+        assert_ne!(BIO_s_mem(), ptr::null());
     }
 
     #[test]
     fn bio_create_from_method() {
-        let bio_ptr_f = tabby_BIO_new(tabby_BIO_s_mem());
+        let bio_ptr_f = BIO_new(BIO_s_mem());
         assert_ne!(bio_ptr_f, ptr::null_mut());
-        tabby_BIO_free(bio_ptr_f);
-        let bio_ptr_m = tabby_BIO_new(tabby_BIO_s_file());
+        BIO_free(bio_ptr_f);
+        let bio_ptr_m = BIO_new(BIO_s_file());
         assert_ne!(bio_ptr_m, ptr::null_mut());
-        tabby_BIO_free(bio_ptr_m);
+        BIO_free(bio_ptr_m);
     }
 
     #[test]
     fn bio_null_ptr() {
-        let bio_ptr = tabby_BIO_new(ptr::null());
+        let bio_ptr = BIO_new(ptr::null());
         assert_eq!(bio_ptr, ptr::null_mut());
 
-        let invalid_method_ptr = "hello".as_ptr() as *const TABBY_BIO_METHOD;
-        let bio_ptr = tabby_BIO_new(invalid_method_ptr);
+        let invalid_method_ptr = "hello".as_ptr() as *const BIO_METHOD;
+        let bio_ptr = BIO_new(invalid_method_ptr);
         assert_eq!(bio_ptr, ptr::null_mut());
     }
 
     #[test]
     fn bio_uninitialized() {
-        let bio_ptr = tabby_BIO_new(tabby_BIO_s_mem());
+        let bio_ptr = BIO_new(BIO_s_mem());
         let buf_ptr = [0u8; 32].as_ptr() as *mut c_void;
-        let len = tabby_BIO_read(bio_ptr, buf_ptr, 32);
+        let len = BIO_read(bio_ptr, buf_ptr, 32);
         assert_eq!(-1, len);
-        let len = tabby_BIO_write(bio_ptr, buf_ptr, 32);
+        let len = BIO_write(bio_ptr, buf_ptr, 32);
         assert_eq!(-1, len);
         let buf_ptr = buf_ptr as *mut c_char;
-        let len = tabby_BIO_gets(bio_ptr, buf_ptr, 32);
+        let len = BIO_gets(bio_ptr, buf_ptr, 32);
         assert_eq!(-1, len);
-        let len = tabby_BIO_puts(bio_ptr, buf_ptr);
+        let len = BIO_puts(bio_ptr, buf_ptr);
         assert_eq!(-1, len);
-        tabby_BIO_free(bio_ptr);
+        BIO_free(bio_ptr);
     }
 
     #[test]
     fn bio_null_buf() {
-        let bio_ptr = tabby_BIO_new_mem_buf(ptr::null_mut(), 10);
+        let bio_ptr = BIO_new_mem_buf(ptr::null_mut(), 10);
         assert_eq!(bio_ptr, ptr::null_mut());
-        let bio_ptr = tabby_BIO_new_mem_buf(b"hello\0".as_ptr() as *mut c_void, -1);
+        let bio_ptr = BIO_new_mem_buf(b"hello\0".as_ptr() as *mut c_void, -1);
         let buf_ptr = ptr::null_mut() as *mut c_void;
-        let len = tabby_BIO_read(bio_ptr, buf_ptr, 5);
+        let len = BIO_read(bio_ptr, buf_ptr, 5);
         assert_eq!(-1, len);
-        let len = tabby_BIO_write(bio_ptr, buf_ptr, 5);
+        let len = BIO_write(bio_ptr, buf_ptr, 5);
         assert_eq!(-1, len);
         let buf_ptr = buf_ptr as *mut c_char;
-        let len = tabby_BIO_gets(bio_ptr, buf_ptr, 5);
+        let len = BIO_gets(bio_ptr, buf_ptr, 5);
         assert_eq!(-1, len);
-        let len = tabby_BIO_puts(bio_ptr, buf_ptr);
+        let len = BIO_puts(bio_ptr, buf_ptr);
         assert_eq!(-1, len);
-        tabby_BIO_free(bio_ptr);
+        BIO_free(bio_ptr);
     }
 
     #[test]
     fn bio_mem() {
         let buf = [0u8; 10];
-        let bio_ptr_m = tabby_BIO_new_mem_buf(buf.as_ptr() as *mut c_void, 10);
+        let bio_ptr_m = BIO_new_mem_buf(buf.as_ptr() as *mut c_void, 10);
         assert_ne!(bio_ptr_m, ptr::null_mut());
         let src = [1u8, 2, 3, 4, 5];
-        let ret = tabby_BIO_write(bio_ptr_m, src.as_ptr() as *const c_void, 5);
+        let ret = BIO_write(bio_ptr_m, src.as_ptr() as *const c_void, 5);
         assert_eq!(ret, 5);
-        tabby_BIO_free(bio_ptr_m);
+        BIO_free(bio_ptr_m);
 
         let buf = [1u8, 2, 3, 4, 5];
-        let bio_ptr_m = tabby_BIO_new_mem_buf(buf.as_ptr() as *mut c_void, 5);
+        let bio_ptr_m = BIO_new_mem_buf(buf.as_ptr() as *mut c_void, 5);
         let dst = [0u8; 10];
-        let ret = tabby_BIO_read(bio_ptr_m, dst.as_ptr() as *mut c_void, 5);
+        let ret = BIO_read(bio_ptr_m, dst.as_ptr() as *mut c_void, 5);
         assert_eq!(ret, 5);
         assert_eq!(dst, [1u8, 2, 3, 4, 5, 0, 0, 0, 0, 0]);
-        tabby_BIO_free(bio_ptr_m);
+        BIO_free(bio_ptr_m);
 
         let buf = [0u8; 10];
-        let bio_ptr_m = tabby_BIO_new_mem_buf(buf.as_ptr() as *mut c_void, 10);
+        let bio_ptr_m = BIO_new_mem_buf(buf.as_ptr() as *mut c_void, 10);
         assert_ne!(bio_ptr_m, ptr::null_mut());
         let src = b"hello\0";
-        let ret = tabby_BIO_puts(bio_ptr_m, src.as_ptr() as *const c_char);
+        let ret = BIO_puts(bio_ptr_m, src.as_ptr() as *const c_char);
         assert_eq!(ret, 6);
-        tabby_BIO_free(bio_ptr_m);
+        BIO_free(bio_ptr_m);
 
         let buf = [1u8, 2, 0, 4, 5];
-        let bio_ptr_m = tabby_BIO_new_mem_buf(buf.as_ptr() as *mut c_void, 5);
+        let bio_ptr_m = BIO_new_mem_buf(buf.as_ptr() as *mut c_void, 5);
         assert_ne!(bio_ptr_m, ptr::null_mut());
         let dst = [0u8; 5];
-        let ret = tabby_BIO_gets(bio_ptr_m, dst.as_ptr() as *mut c_char, 5);
+        let ret = BIO_gets(bio_ptr_m, dst.as_ptr() as *mut c_char, 5);
         assert_eq!(ret, 3);
         assert_eq!(dst, [1u8, 2, 0, 0, 0]);
-        tabby_BIO_free(bio_ptr_m);
+        BIO_free(bio_ptr_m);
     }
 
     #[test]
     fn bio_file_new_fp() {
-        let bio_ptr_f = tabby_BIO_new_fp(ptr::null_mut(), 0);
+        let bio_ptr_f = BIO_new_fp(ptr::null_mut(), 0);
         assert_eq!(bio_ptr_f, ptr::null_mut());
 
         let file = fs::File::open("tests/ca.cert").unwrap(); // Read-only, "r"
         let fp = unsafe { file.open_file_stream_r() };
         assert_ne!(fp, ptr::null_mut());
 
-        let bio_ptr_f = tabby_BIO_new_fp(fp, 0);
+        let bio_ptr_f = BIO_new_fp(fp, 0);
         assert_ne!(bio_ptr_f, ptr::null_mut());
-        tabby_BIO_free(bio_ptr_f);
+        BIO_free(bio_ptr_f);
     }
 
     #[test]
@@ -888,38 +847,38 @@ mod tests {
         let fp = unsafe { file.open_file_stream_r() };
         assert_ne!(fp, ptr::null_mut());
 
-        let bio_ptr_f = tabby_BIO_new(tabby_BIO_s_file());
+        let bio_ptr_f = BIO_new(BIO_s_file());
         assert_ne!(bio_ptr_f, ptr::null_mut());
-        assert_eq!(0x1, tabby_BIO_get_close(bio_ptr_f)); // BIO_CLOSE by default
-        tabby_BIO_set_fp(bio_ptr_f, fp, 0);
-        assert_eq!(0x0, tabby_BIO_get_close(bio_ptr_f)); // BIO_NOCLOSE after set_fp
-        assert_eq!(CRYPTO_SUCCESS, tabby_BIO_set_close(bio_ptr_f, 0x0));
+        assert_eq!(0x1, BIO_get_close(bio_ptr_f)); // BIO_CLOSE by default
+        BIO_set_fp(bio_ptr_f, fp, 0);
+        assert_eq!(0x0, BIO_get_close(bio_ptr_f)); // BIO_NOCLOSE after set_fp
+        assert_eq!(CRYPTO_SUCCESS, BIO_set_close(bio_ptr_f, 0x0));
         let buf = [0u8; 1024];
-        let ret = tabby_BIO_gets(bio_ptr_f, buf.as_ptr() as *mut c_char, 1024);
+        let ret = BIO_gets(bio_ptr_f, buf.as_ptr() as *mut c_char, 1024);
         assert_eq!(ret, 28); // gets returns the first line
-        tabby_BIO_free(bio_ptr_f);
+        BIO_free(bio_ptr_f);
     }
 
     #[test]
     fn bio_file_new_from_path() {
         let path_ptr = b"tests/deleteme\0".as_ptr() as *const c_char;
 
-        let bio_ptr_f = tabby_BIO_new(tabby_BIO_s_file());
+        let bio_ptr_f = BIO_new(BIO_s_file());
         assert_ne!(bio_ptr_f, ptr::null_mut());
 
-        let ret = tabby_BIO_write_filename(bio_ptr_f, path_ptr);
+        let ret = BIO_write_filename(bio_ptr_f, path_ptr);
         assert_eq!(ret, CRYPTO_SUCCESS);
 
-        let ret = tabby_BIO_rw_filename(bio_ptr_f, path_ptr);
+        let ret = BIO_rw_filename(bio_ptr_f, path_ptr);
         assert_eq!(ret, CRYPTO_SUCCESS);
 
-        let ret = tabby_BIO_read_filename(bio_ptr_f, path_ptr);
+        let ret = BIO_read_filename(bio_ptr_f, path_ptr);
         assert_eq!(ret, CRYPTO_SUCCESS);
 
-        let ret = tabby_BIO_append_filename(bio_ptr_f, path_ptr);
+        let ret = BIO_append_filename(bio_ptr_f, path_ptr);
         assert_eq!(ret, CRYPTO_SUCCESS);
 
-        tabby_BIO_free(bio_ptr_f);
+        BIO_free(bio_ptr_f);
         let _ = fs::remove_file("tests/deleteme");
     }
 }

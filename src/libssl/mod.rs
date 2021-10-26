@@ -23,11 +23,16 @@ pub mod safestack;
 
 #[doc(hidden)]
 #[repr(C)]
-pub(self) enum SslConstants {
+pub enum SslConstants {
     Error = -1,
     Failure = 0,
     Success = 1,
 }
+
+use libc::c_int;
+pub const SSL_ERROR: c_int = -1;
+pub const SSL_FAILURE: c_int = 0;
+pub const SSL_SUCCESS: c_int = 1;
 
 #[doc(hidden)]
 #[repr(C)]
@@ -38,8 +43,3 @@ pub(self) enum SslSessionCacheModes {
     Server = 0x2,
     Both = 0x3,
 }
-
-use libc::c_int;
-pub(self) const SSL_ERROR: c_int = SslConstants::Error as c_int;
-pub(self) const SSL_FAILURE: c_int = SslConstants::Failure as c_int;
-pub(self) const SSL_SUCCESS: c_int = SslConstants::Success as c_int;

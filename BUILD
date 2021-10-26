@@ -1,4 +1,4 @@
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_shared_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -19,17 +19,56 @@ rust_library(
         "//cargo:untrusted",
         "//cargo:webpki",
         "//cargo:webpki_roots",
-    ]
+    ],
 )
 
 rust_binary(
-    name = "example_simple_client",
+    name = "example_simple_client_rs",
     srcs = [
-        "examples/simple_client.rs"
+        "examples/simple_client.rs",
     ],
     deps = [
         ":tabbyssl_rlib",
         "//cargo:libc",
         "//cargo:webpki_roots",
-    ]
+    ],
+)
+
+rust_shared_library(
+    name = "tabbyssl_dylib",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "//cargo:base64",
+        "//cargo:bitflags",
+        "//cargo:env_logger",
+        "//cargo:lazy_static",
+        "//cargo:libc",
+        "//cargo:ring",
+        "//cargo:rustls",
+        "//cargo:rustls_pemfile",
+        "//cargo:sct",
+        "//cargo:thiserror",
+        "//cargo:untrusted",
+        "//cargo:webpki",
+        "//cargo:webpki_roots",
+    ],
+)
+
+cc_library(
+    name = "tabbyssl",
+    hdrs = ["include/tabbyssl/ssl.h"],
+    includes = ["include"],
+    deps = [
+        ":tabbyssl_dylib",
+    ],
+)
+
+cc_binary(
+    name = "example_simple_client_c",
+    srcs = [
+        "examples/simple_client.c",
+    ],
+    deps = [
+        ":tabbyssl",
+    ],
 )

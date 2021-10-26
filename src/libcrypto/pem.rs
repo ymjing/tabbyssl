@@ -5,10 +5,10 @@
  */
 
 use super::bio;
-use super::bio::TABBY_BIO;
-use super::evp::TABBY_EVP_PKEY;
+use super::bio::BIO;
+use super::evp::EVP_PKEY;
 use crate::error_san::*;
-use crate::libssl::x509::TABBY_X509;
+use crate::libssl::x509::X509;
 use libc::c_void;
 //use libcrypto::{CRYPTO_FAILURE, CRYPTO_SUCCESS};
 use crate::libssl::err::{Error, InnerResult};
@@ -26,28 +26,28 @@ use std::{io, ptr};
 /// ```
 ///
 #[no_mangle]
-pub extern "C" fn tabby_PEM_read_bio_PrivateKey(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    pkey_pp: *mut *mut TABBY_EVP_PKEY,
+pub extern "C" fn PEM_read_bio_PrivateKey(
+    bio_ptr: *mut BIO<'_>,
+    pkey_pp: *mut *mut EVP_PKEY,
     _cb: *mut c_void,
     _u: *mut c_void,
-) -> *mut TABBY_EVP_PKEY {
+) -> *mut EVP_PKEY {
     check_inner_result!(
-        inner_tabby_pem_read_bio_privatekey(bio_ptr, pkey_pp),
+        inner_pem_read_bio_privatekey(bio_ptr, pkey_pp),
         ptr::null_mut()
     )
 }
 
-fn inner_tabby_pem_read_bio_privatekey(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    pkey_pp: *mut *mut TABBY_EVP_PKEY,
-) -> InnerResult<*mut TABBY_EVP_PKEY> {
+fn inner_pem_read_bio_privatekey(
+    bio_ptr: *mut BIO<'_>,
+    pkey_pp: *mut *mut EVP_PKEY,
+) -> InnerResult<*mut EVP_PKEY> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let mut buf_reader = io::BufReader::with_capacity(1, bio);
     let key =
         get_either_rsa_or_ecdsa_private_key(&mut buf_reader).map_err(|_| Error::BadFuncArg)?;
-    let pkey = TABBY_EVP_PKEY::new(key);
-    let pkey_ptr = Box::into_raw(Box::new(pkey)) as *mut TABBY_EVP_PKEY;
+    let pkey = EVP_PKEY::new(key);
+    let pkey_ptr = Box::into_raw(Box::new(pkey)) as *mut EVP_PKEY;
 
     if !pkey_pp.is_null() {
         unsafe {
@@ -68,18 +68,18 @@ fn inner_tabby_pem_read_bio_privatekey(
 ///                                     pem_password_cb *cb, void *u);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_PEM_read_PrivateKey(
+pub extern "C" fn PEM_read_PrivateKey(
     file_ptr: *mut libc::FILE,
-    pkey_pp: *mut *mut TABBY_EVP_PKEY,
+    pkey_pp: *mut *mut EVP_PKEY,
     _cb: *mut c_void,
     _u: *mut c_void,
-) -> *mut TABBY_EVP_PKEY {
-    let bio_ptr = bio::tabby_BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
+) -> *mut EVP_PKEY {
+    let bio_ptr = bio::BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
     let ret = check_inner_result!(
-        inner_tabby_pem_read_bio_privatekey(bio_ptr, pkey_pp),
+        inner_pem_read_bio_privatekey(bio_ptr, pkey_pp),
         ptr::null_mut()
     );
-    bio::tabby_BIO_free(bio_ptr);
+    bio::BIO_free(bio_ptr);
     ret
 }
 
@@ -92,27 +92,24 @@ pub extern "C" fn tabby_PEM_read_PrivateKey(
 /// X509 *PEM_read_bio_X509(BIO *bio, X509 **x, pem_password_cb *cb, void *u);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_PEM_read_bio_X509(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    x509_pp: *mut *mut TABBY_X509,
+pub extern "C" fn PEM_read_bio_X509(
+    bio_ptr: *mut BIO<'_>,
+    x509_pp: *mut *mut X509,
     _cb: *mut c_void,
     _u: *mut c_void,
-) -> *mut TABBY_X509 {
-    check_inner_result!(
-        inner_tabby_pem_read_bio_x509(bio_ptr, x509_pp),
-        ptr::null_mut()
-    )
+) -> *mut X509 {
+    check_inner_result!(inner_pem_read_bio_x509(bio_ptr, x509_pp), ptr::null_mut())
 }
 
-fn inner_tabby_pem_read_bio_x509(
-    bio_ptr: *mut TABBY_BIO<'_>,
-    x509_pp: *mut *mut TABBY_X509,
-) -> InnerResult<*mut TABBY_X509> {
+fn inner_pem_read_bio_x509(
+    bio_ptr: *mut BIO<'_>,
+    x509_pp: *mut *mut X509,
+) -> InnerResult<*mut X509> {
     let bio = sanitize_ptr_for_mut_ref(bio_ptr)?;
     let mut buf_reader = io::BufReader::with_capacity(1, bio);
     let cert = get_certificate(&mut buf_reader).map_err(|_| (Error::BadFuncArg))?;
-    let x509 = TABBY_X509::new(cert);
-    let x509_ptr = Box::into_raw(Box::new(x509)) as *mut TABBY_X509;
+    let x509 = X509::new(cert);
+    let x509_ptr = Box::into_raw(Box::new(x509)) as *mut X509;
     if !x509_pp.is_null() {
         unsafe {
             let p = &mut *x509_pp;
@@ -130,18 +127,15 @@ fn inner_tabby_pem_read_bio_x509(
 /// X509 *PEM_read_X509(FILE *fp, X509 **x, pem_password_cb *cb, void *u);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_PEM_read_X509(
+pub extern "C" fn PEM_read_X509(
     file_ptr: *mut libc::FILE,
-    x509_pp: *mut *mut TABBY_X509,
+    x509_pp: *mut *mut X509,
     _cb: *mut c_void,
     _u: *mut c_void,
-) -> *mut TABBY_X509 {
-    let bio_ptr = bio::tabby_BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
-    let ret = check_inner_result!(
-        inner_tabby_pem_read_bio_x509(bio_ptr, x509_pp),
-        ptr::null_mut()
-    );
-    bio::tabby_BIO_free(bio_ptr);
+) -> *mut X509 {
+    let bio_ptr = bio::BIO_new_fp(file_ptr, 0x0); // BIO_NOCLOSE
+    let ret = check_inner_result!(inner_pem_read_bio_x509(bio_ptr, x509_pp), ptr::null_mut());
+    bio::BIO_free(bio_ptr);
     ret
 }
 
@@ -233,20 +227,16 @@ mod test {
 
     #[test]
     fn pem_read_bio_private_key() {
-        let bio_ptr = bio::tabby_BIO_new_file(
+        let bio_ptr = bio::BIO_new_file(
             b"tests/end.key\0".as_ptr() as *const c_char,
             b"r\0".as_ptr() as *const c_char,
         );
         assert_ne!(bio_ptr, ptr::null_mut());
-        let pkey_ptr = tabby_PEM_read_bio_PrivateKey(
-            bio_ptr,
-            ptr::null_mut(),
-            ptr::null_mut(),
-            ptr::null_mut(),
-        );
+        let pkey_ptr =
+            PEM_read_bio_PrivateKey(bio_ptr, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
         assert_ne!(pkey_ptr, ptr::null_mut());
-        evp::tabby_EVP_PKEY_free(pkey_ptr);
-        bio::tabby_BIO_free(bio_ptr);
+        evp::EVP_PKEY_free(pkey_ptr);
+        bio::BIO_free(bio_ptr);
     }
 
     #[test]
@@ -254,24 +244,23 @@ mod test {
         let file = fs::File::open("tests/end.key").unwrap(); // Read-only, "r"
         let fp = unsafe { file.open_file_stream_r() };
         assert_ne!(fp, ptr::null_mut());
-        let pkey_ptr =
-            tabby_PEM_read_PrivateKey(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
+        let pkey_ptr = PEM_read_PrivateKey(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
         assert_ne!(pkey_ptr, ptr::null_mut());
-        evp::tabby_EVP_PKEY_free(pkey_ptr);
+        evp::EVP_PKEY_free(pkey_ptr);
     }
 
     #[test]
     fn pem_read_bio_x509() {
-        let bio_ptr = bio::tabby_BIO_new_file(
+        let bio_ptr = bio::BIO_new_file(
             b"tests/end.fullchain\0".as_ptr() as *const c_char,
             b"r\0".as_ptr() as *const c_char,
         );
         assert_ne!(bio_ptr, ptr::null_mut());
         let x509_ptr =
-            tabby_PEM_read_bio_X509(bio_ptr, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
+            PEM_read_bio_X509(bio_ptr, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
         assert_ne!(x509_ptr, ptr::null_mut());
-        x509::tabby_X509_free(x509_ptr);
-        bio::tabby_BIO_free(bio_ptr);
+        x509::X509_free(x509_ptr);
+        bio::BIO_free(bio_ptr);
     }
 
     #[test]
@@ -279,8 +268,8 @@ mod test {
         let file = fs::File::open("tests/end.fullchain").unwrap(); // Read-only, "r"
         let fp = unsafe { file.open_file_stream_r() };
         assert_ne!(fp, ptr::null_mut());
-        let x509_ptr = tabby_PEM_read_X509(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
+        let x509_ptr = PEM_read_X509(fp, ptr::null_mut(), ptr::null_mut(), ptr::null_mut());
         assert_ne!(x509_ptr, ptr::null_mut());
-        x509::tabby_X509_free(x509_ptr);
+        x509::X509_free(x509_ptr);
     }
 }

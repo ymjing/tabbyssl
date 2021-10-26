@@ -1,3 +1,4 @@
 target
 /bazel-*
 .DS_Store
+.vscode

@@ -56,10 +56,10 @@ pub(crate) type InnerResult<T> = Result<T, Error>;
 /// ```c
 /// #include <tabbyssl/openssl/err.h>
 ///
-/// void SSL_load_error_strings(void);
+/// void ERR_load_error_strings(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_ERR_load_error_strings() {
+pub extern "C" fn ERR_load_error_strings() {
     // compatibility only
 }
 
@@ -71,7 +71,7 @@ pub extern "C" fn tabby_ERR_load_error_strings() {
 /// void SSL_free_error_strings(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_ERR_free_error_strings() {
+pub extern "C" fn ERR_free_error_strings() {
     // compatibility only
 }
 
@@ -94,7 +94,7 @@ impl ErrorQueue {
 /// void ERR_clear_error(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn tabby_ERR_clear_error() {
+pub extern "C" fn ERR_clear_error() {
     ERROR_QUEUE.with(|q| {
         q.borrow_mut().clear();
     });
@@ -114,7 +114,7 @@ pub extern "C" fn tabby_ERR_clear_error() {
 /// This API is Rust-unsafe because it dereferences a pointer provided by users
 /// Use with caution!
 #[no_mangle]
-pub unsafe extern "C" fn tabby_ERR_print_errors_fp(fp: *mut libc::FILE) {
+pub unsafe extern "C" fn ERR_print_errors_fp(fp: *mut libc::FILE) {
     use crate::libcrypto::bio::FromFileStream;
     use std::fs;
     use std::io::Write;

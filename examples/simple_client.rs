@@ -17,19 +17,19 @@ fn main() {
             Accept-Encoding: identity\r\n\
             \r\n";
 
-    let method = tabby_TLS_client_method();
-    let ctx = tabby_SSL_CTX_new(method);
-    let ssl = tabby_SSL_new(ctx);
-    tabby_SSL_set_tlsext_host_name(ssl, b"google.com\0".as_ptr() as *const libc::c_char);
+    let method = TLS_client_method();
+    let ctx = SSL_CTX_new(method);
+    let ssl = SSL_new(ctx);
+    SSL_set_tlsext_host_name(ssl, b"google.com\0".as_ptr() as *const libc::c_char);
     let sock = net::TcpStream::connect("google.com:443").expect("Connect error");
-    let _ret = tabby_SSL_set_fd(ssl, sock.as_raw_fd());
-    let _ret = tabby_SSL_connect(ssl);
-    let wr_len = tabby_SSL_write(ssl, HTTP_REQUEST.as_ptr() as *const libc::c_uchar, 82);
+    let _ret = SSL_set_fd(ssl, sock.as_raw_fd());
+    let _ret = SSL_connect(ssl);
+    let wr_len = SSL_write(ssl, HTTP_REQUEST.as_ptr() as *const libc::c_void, 82);
     eprintln!("Written {} bytes", wr_len);
     let buf = [0u8; 256];
-    let rd_len = tabby_SSL_read(ssl, buf.as_ptr() as *mut libc::c_uchar, 256);
+    let rd_len = SSL_read(ssl, buf.as_ptr() as *mut libc::c_void, 256);
     eprintln!("Read {} bytes", rd_len);
     eprintln!("{}", str::from_utf8(&buf).unwrap());
-    tabby_SSL_free(ssl);
-    tabby_SSL_CTX_free(ctx);
+    SSL_free(ssl);
+    SSL_CTX_free(ctx);
 }
