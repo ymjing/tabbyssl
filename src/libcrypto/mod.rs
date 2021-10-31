@@ -17,5 +17,5 @@ pub mod evp;
 pub mod pem;
 
 use libc::c_int;
-pub(self) const CRYPTO_FAILURE: c_int = 0;
-pub(self) const CRYPTO_SUCCESS: c_int = 1;
+pub const CRYPTO_FAILURE: c_int = 0;
+pub const CRYPTO_SUCCESS: c_int = 1;

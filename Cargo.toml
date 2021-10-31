@@ -39,10 +39,6 @@ rustls-pemfile = "0.2.1"
 untrusted = "0.7.1"
 thiserror = "1.0.30"
 
-[[bin]]
-name = "simple_client"
-path = "examples/simple_client.rs"
-
 [package.metadata.raze]
 workspace_path = "//cargo"
 default_gen_buildrs = false

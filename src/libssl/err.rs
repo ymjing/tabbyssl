@@ -134,6 +134,3 @@ pub unsafe extern "C" fn ERR_print_errors_fp(fp: *mut libc::FILE) {
         }
     });
 }
-
-#[cfg(test)]
-mod tests {}
