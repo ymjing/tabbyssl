@@ -4,6 +4,9 @@
 Previously [MesaLink](https://github.com/mesalock-linux/mesalink), **TabbySSL**
 is an OpenSSL compatibility layer for the Rust SSL/TLS stack.
 
+<a href="https://github.com/ymjing/tabbyssl/actions"><img src="https://img.shields.io/github/workflow/status/ymjing/tabbyssl/CI" /></a>
+<a href="https://github.com/ymjing/tabbyssl/blob/master/LICENSE"><img src="https://img.shields.io/badge/Licence-Apachev2-brightgreen.svg" /></a>
+
 ## Supported ciphersuites
 > Same as rustls
 
