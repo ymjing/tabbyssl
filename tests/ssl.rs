@@ -8,14 +8,14 @@ use tabbyssl::libssl::ssl::*;
 use tabbyssl::libssl::x509::*;
 use tabbyssl::libssl::*;
 
-const CONST_CA_FILE: &'static [u8] = b"tests/certs/ca.cert\0";
-const CONST_INTER_CA_FILE: &'static [u8] = b"tests/certs/inter.cert\0";
-const CONST_SERVER_CERT_CHAIN_FILE: &'static [u8] = b"tests/certs/end.fullchain\0";
-const CONST_SERVER_CERT_FILE: &'static [u8] = b"tests/certs/end.cert\0";
-const CONST_SERVER_KEY_FILE: &'static [u8] = b"tests/certs/end.key\0";
-const CONST_CLIENT_CERT_FILE: &'static [u8] = b"tests/certs/client.fullchain\0";
-const CONST_CLIENT_KEY_FILE: &'static [u8] = b"tests/certs/client.key\0";
-const CONST_SERVER_ADDR: &'static str = "127.0.0.1";
+const CONST_CA_FILE: &[u8] = b"tests/certs/ca.cert\0";
+const CONST_INTER_CA_FILE: &[u8] = b"tests/certs/inter.cert\0";
+const CONST_SERVER_CERT_CHAIN_FILE: &[u8] = b"tests/certs/end.fullchain\0";
+const CONST_SERVER_CERT_FILE: &[u8] = b"tests/certs/end.cert\0";
+const CONST_SERVER_KEY_FILE: &[u8] = b"tests/certs/end.key\0";
+const CONST_CLIENT_CERT_FILE: &[u8] = b"tests/certs/client.fullchain\0";
+const CONST_CLIENT_KEY_FILE: &[u8] = b"tests/certs/client.key\0";
+const CONST_SERVER_ADDR: &str = "127.0.0.1";
 
 struct TabbyTestSession {
     ctx: *mut SSL_CTX_ARC,
@@ -155,11 +155,11 @@ enum TlsVersion {
 
 fn get_method_by_version(version: &TlsVersion, is_server: bool) -> *const SSL_METHOD {
     match (version, is_server) {
-        (&TlsVersion::Tlsv12, false) => TLSv1_2_client_method(),
-        (&TlsVersion::Tlsv13, false) => TLSv1_3_client_method(),
+        (TlsVersion::Tlsv12, false) => TLSv1_2_client_method(),
+        (TlsVersion::Tlsv13, false) => TLSv1_3_client_method(),
         (&TlsVersion::Both, false) => TLS_client_method(),
-        (&TlsVersion::Tlsv12, true) => TLSv1_2_server_method(),
-        (&TlsVersion::Tlsv13, true) => TLSv1_3_server_method(),
+        (TlsVersion::Tlsv12, true) => TLSv1_2_server_method(),
+        (TlsVersion::Tlsv13, true) => TLSv1_3_server_method(),
         (&TlsVersion::Both, true) => TLS_server_method(),
     }
 }
@@ -207,26 +207,26 @@ impl TabbyTestDriver {
         let cipher_name_ptr = SSL_get_cipher_name(ssl);
         let cipher_name = unsafe { ffi::CStr::from_ptr(cipher_name_ptr).to_str().unwrap() };
         match version {
-            &TlsVersion::Tlsv12 => {
+            TlsVersion::Tlsv12 => {
                 assert_eq!(cipher_name, "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384")
             }
-            &TlsVersion::Tlsv13 => assert_eq!(cipher_name, "TLS13_AES_256_GCM_SHA384"),
+            TlsVersion::Tlsv13 => assert_eq!(cipher_name, "TLS13_AES_256_GCM_SHA384"),
             _ => (),
         };
 
         let cipher_version_ptr = SSL_get_cipher_version(ssl);
         let cipher_version = unsafe { ffi::CStr::from_ptr(cipher_version_ptr).to_str().unwrap() };
         match version {
-            &TlsVersion::Tlsv12 => assert_eq!(cipher_version, "TLS1.2"),
-            &TlsVersion::Tlsv13 => assert_eq!(cipher_version, "TLS1.3"),
+            TlsVersion::Tlsv12 => assert_eq!(cipher_version, "TLS1.2"),
+            TlsVersion::Tlsv13 => assert_eq!(cipher_version, "TLS1.3"),
             _ => (),
         };
 
         let ssl_version_ptr = SSL_get_version(ssl);
         let ssl_version = unsafe { ffi::CStr::from_ptr(ssl_version_ptr).to_str().unwrap() };
         match version {
-            &TlsVersion::Tlsv12 => assert_eq!(ssl_version, "TLS1.2"),
-            &TlsVersion::Tlsv13 => assert_eq!(ssl_version, "TLS1.3"),
+            TlsVersion::Tlsv12 => assert_eq!(ssl_version, "TLS1.2"),
+            TlsVersion::Tlsv13 => assert_eq!(ssl_version, "TLS1.3"),
             _ => (),
         };
     }
@@ -363,7 +363,7 @@ fn ssl_io_on_bad_file_descriptor() {
 #[test]
 fn ssl_on_nonblocking_socket() {
     let sock = net::TcpStream::connect("google.com:443").expect("Conenction failed");
-    assert_eq!(true, sock.set_nonblocking(true).is_ok());
+    assert!(sock.set_nonblocking(true).is_ok());
     let ctx = SSL_CTX_new(SSLv23_client_method());
     let ssl = SSL_new(ctx);
     assert_eq!(
@@ -691,7 +691,6 @@ fn get_and_set_ssl_ctx() {
 fn dummy_openssl_compatible_apis_always_return_success() {
     assert_eq!(SSL_SUCCESS, SSL_library_init());
     assert_eq!(SSL_SUCCESS, OpenSSL_add_ssl_algorithms());
-    assert_eq!((), SSL_load_error_strings());
 }
 
 #[test]

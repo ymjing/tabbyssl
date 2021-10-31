@@ -1,4 +1,4 @@
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_shared_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_clippy", "rust_library", "rust_shared_library", "rust_test", "rustfmt_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -91,5 +91,22 @@ cc_binary(
     ],
     deps = [
         ":tabbyssl",
+    ],
+)
+
+rustfmt_test(
+    name = "rustfmt",
+    targets = [
+        ":tabbyssl_rlib",
+        ":tabbyssl_test",
+    ],
+)
+
+rust_clippy(
+    name = "clippy",
+    testonly = True,
+    deps = [
+        ":tabbyssl_rlib",
+        ":tabbyssl_test",
     ],
 )

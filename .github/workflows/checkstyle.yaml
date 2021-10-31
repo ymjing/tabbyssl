@@ -1,0 +1,42 @@
+name: Check Style
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  checkstyle:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'style skip')"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      
+      - name: Install bazelisk
+        run: |
+          curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/v1.1.0/bazelisk-linux-amd64"
+          mkdir -p "${GITHUB_WORKSPACE}/bin/"
+          mv bazelisk-linux-amd64 "${GITHUB_WORKSPACE}/bin/bazel"
+          chmod +x "${GITHUB_WORKSPACE}/bin/bazel"
+      
+      - name: rustfmt
+        run: |
+          "${GITHUB_WORKSPACE}/bin/bazel" test :rustfmt
+
+      - name: clippy
+        run: |
+          "${GITHUB_WORKSPACE}/bin/bazel" build :clippy 
+             
+      - name: Check BUILD.bazel and WORKSPACE
+        run: |
+          go get -u github.com/bazelbuild/buildtools/buildifier
+          "$(go env GOPATH)/bin/buildifier" -d -r .
+
+      - name: Check .c and .h
+        run: |
+          git ls-files | grep '\.c$\|\h$' | xargs --no-run-if-empty -d'\n' clang-format -i --style=Google --dry-run

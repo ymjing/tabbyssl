@@ -670,6 +670,7 @@ pub extern "C" fn BIO_new_mem_buf<'a>(buf_ptr: *mut c_void, len: c_int) -> *mut 
 /// Helper trait for converting from FILE* in libc.
 #[doc(hidden)]
 pub trait FromFileStream {
+    #[allow(clippy::missing_safety_doc)]
     unsafe fn from_file_stream(stream: *mut libc::FILE) -> Self;
 }
 
@@ -692,8 +693,9 @@ impl<T: FromRawHandle> FromFileStream for T {
 /// Helper trait for converting to FILE* in libc.
 #[doc(hidden)]
 pub trait OpenFileStream {
+    #[allow(clippy::missing_safety_doc)]
     unsafe fn open_file_stream_r(&self) -> *mut libc::FILE;
-
+    #[allow(clippy::missing_safety_doc)]
     unsafe fn open_file_stream_w(&self) -> *mut libc::FILE;
 }
 

@@ -14,8 +14,8 @@
 #include <tabbyssl/ssl.h>
 #include <unistd.h>
 
-#define REQUEST                                                                \
-  "GET / HTTP/1.0\r\nHost: %s\r\nConnection: close\r\nAccept-Encoding: "       \
+#define REQUEST                                                          \
+  "GET / HTTP/1.0\r\nHost: %s\r\nConnection: close\r\nAccept-Encoding: " \
   "identity\r\n\r\n"
 
 int tls_client(SSL_CTX *, const char *);
@@ -124,7 +124,6 @@ fail:
 }
 
 int main(int argc, char *argv[]) {
-
   const char *hostname;
   SSL_CTX *ctx;
 
@@ -144,7 +143,7 @@ int main(int argc, char *argv[]) {
     ERR_print_errors_fp(stderr);
     return -1;
   }
-  // fresh start
+
   tls_client(ctx, hostname);
   SSL_CTX_free(ctx);
   return 0;

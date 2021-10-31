@@ -6,8 +6,8 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define SSL_ERROR -1
 
@@ -92,7 +92,7 @@ typedef struct Arc_SSL_CTX SSL_CTX;
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
+#endif  // __cplusplus
 
 /*
  `ERR_load_error_strings` - compatibility only
@@ -403,8 +403,7 @@ SSL_CTX *SSL_CTX_new(const struct SSL_METHOD *method_ptr);
                                    const char *CApath);
  ```
  */
-int SSL_CTX_load_verify_locations(SSL_CTX *ctx_ptr,
-                                  const char *cafile_ptr,
+int SSL_CTX_load_verify_locations(SSL_CTX *ctx_ptr, const char *cafile_ptr,
                                   const char *capath_ptr);
 
 /*
@@ -421,8 +420,7 @@ int SSL_CTX_load_verify_locations(SSL_CTX *ctx_ptr,
  ```
  */
 int SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx_ptr,
-                                       const char *filename_ptr,
-                                       int _format);
+                                       const char *filename_ptr, int _format);
 
 /*
  `SSL_CTX_use_certificate` loads the certificate x into ctx. The rest of the
@@ -479,8 +477,7 @@ int SSL_CTX_use_PrivateKey(SSL_CTX *ctx_ptr, struct EVP_PKEY *pkey_ptr);
  int SSL_CTX_use_PrivateKey_file(SSL_CTX *ctx, const char *file, int type);
  ```
  */
-int SSL_CTX_use_PrivateKey_file(SSL_CTX *ctx_ptr,
-                                const char *filename_ptr,
+int SSL_CTX_use_PrivateKey_file(SSL_CTX *ctx_ptr, const char *filename_ptr,
                                 int _format);
 
 /*
@@ -494,9 +491,7 @@ int SSL_CTX_use_PrivateKey_file(SSL_CTX *ctx_ptr,
                                long len);
  ```
  */
-int SSL_CTX_use_PrivateKey_ASN1(int pk_type,
-                                SSL_CTX *ctx_ptr,
-                                unsigned char *d,
+int SSL_CTX_use_PrivateKey_ASN1(int pk_type, SSL_CTX *ctx_ptr, unsigned char *d,
                                 long len);
 
 /*
@@ -510,9 +505,7 @@ int SSL_CTX_use_PrivateKey_ASN1(int pk_type,
                              long len);
  ```
  */
-int SSL_use_PrivateKey_ASN1(int pk_type,
-                            struct SSL *ssl_ptr,
-                            unsigned char *d,
+int SSL_use_PrivateKey_ASN1(int pk_type, struct SSL *ssl_ptr, unsigned char *d,
                             long len);
 
 /*
@@ -549,7 +542,7 @@ int SSL_check_private_key(struct SSL *ctx_ptr);
  int SSL_CTX_set_verify(const SSL_CTX *ctx, int mode, void *ignored_cb);
  ```
  */
-int SSL_CTX_set_verify(SSL_CTX *ctx_ptr, int mode, int (*_cb)(int, void*));
+int SSL_CTX_set_verify(SSL_CTX *ctx_ptr, int mode, int (*_cb)(int, void *));
 
 /*
  `SSL_CTX_set_session_cache_mode` - enable/disable session caching by setting
@@ -772,8 +765,8 @@ int SSL_get_fd(struct SSL *ssl_ptr);
 
 #if defined(_WIN64)
 /*
- `SSL_set_socket` - set the Windows raw socket as the input/output facility for the
- TLS/SSL (encrypted) side of ssl. fd will typically be the socket file
+ `SSL_set_socket` - set the Windows raw socket as the input/output facility for
+ the TLS/SSL (encrypted) side of ssl. fd will typically be the socket file
  descriptor of a network connection.
 
  ```c
@@ -782,8 +775,7 @@ int SSL_get_fd(struct SSL *ssl_ptr);
  int SSL_set_socket(SSL *ssl, int fd);
  ```
  */
-int SSL_set_socket(struct SSL *ssl_ptr,
-                   int sock);
+int SSL_set_socket(struct SSL *ssl_ptr, int sock);
 #endif
 
 #if defined(_WIN64)
@@ -925,10 +917,8 @@ int SSL_flush(struct SSL *ssl_ptr);
  int SSL_write_early_data(SSL *s, const void *buf, size_t num, size_t *written);
  ```
  */
-int SSL_write_early_data(struct SSL *ssl_ptr,
-                         const unsigned char *buf_ptr,
-                         int buf_len,
-                         size_t *written_len_ptr);
+int SSL_write_early_data(struct SSL *ssl_ptr, const unsigned char *buf_ptr,
+                         int buf_len, size_t *written_len_ptr);
 
 /*
  `SSL_get_early_data_status` - returns SSL_EARLY_DATA_ACCEPTED if early data
@@ -1061,8 +1051,7 @@ struct X509_NAME *X509_get_subject_name(struct X509 *x509_ptr);
  char * X509_NAME_oneline(X509_NAME *a,char *buf,int size);
  ```
  */
-char *X509_NAME_oneline(struct X509_NAME *x509_name_ptr,
-                        char *buf_ptr,
+char *X509_NAME_oneline(struct X509_NAME *x509_name_ptr, char *buf_ptr,
                         int size);
 
 /*
@@ -1154,8 +1143,8 @@ int sk_X509_NAME_num(const struct STACK_X509_NAME *stack_ptr);
  X509_NAME *sk_X509_NAME_value(const STACK_OF(X509_NAME) *sk, int idx);
  ```
  */
-const struct X509_NAME *sk_X509_NAME_value(const struct STACK_X509_NAME *stack_ptr,
-                                           int index);
+const struct X509_NAME *sk_X509_NAME_value(
+    const struct STACK_X509_NAME *stack_ptr, int index);
 
 /*
  `sk_X509_NAME_push` - appends ptr to sk.
@@ -1170,8 +1159,8 @@ int sk_X509_NAME_push(struct STACK_X509_NAME *stack_ptr,
                       const struct X509_NAME *item_ptr);
 
 /*
- `sk_X509_NAME_free` - frees up the sk structure. After this call sk is no longer
- valid.
+ `sk_X509_NAME_free` - frees up the sk structure. After this call sk is no
+ longer valid.
 
  ```c
  #include <tabbyssl/openssl/safestack.h>
@@ -1407,8 +1396,7 @@ void EVP_PKEY_free(struct EVP_PKEY *pkey_ptr);
 
  */
 struct EVP_PKEY *PEM_read_bio_PrivateKey(struct BIO *bio_ptr,
-                                         struct EVP_PKEY **pkey_pp,
-                                         void *_cb,
+                                         struct EVP_PKEY **pkey_pp, void *_cb,
                                          void *_u);
 
 /*
@@ -1422,10 +1410,8 @@ struct EVP_PKEY *PEM_read_bio_PrivateKey(struct BIO *bio_ptr,
                                      pem_password_cb *cb, void *u);
  ```
  */
-struct EVP_PKEY *PEM_read_PrivateKey(FILE *file_ptr,
-                                     struct EVP_PKEY **pkey_pp,
-                                     void *_cb,
-                                     void *_u);
+struct EVP_PKEY *PEM_read_PrivateKey(FILE *file_ptr, struct EVP_PKEY **pkey_pp,
+                                     void *_cb, void *_u);
 
 /*
  `PEM_read_bio_X509` reads a X509 certificate from *bio*. If there are
@@ -1437,10 +1423,8 @@ struct EVP_PKEY *PEM_read_PrivateKey(FILE *file_ptr,
  X509 *PEM_read_bio_X509(BIO *bio, X509 **x, pem_password_cb *cb, void *u);
  ```
  */
-struct X509 *PEM_read_bio_X509(struct BIO *bio_ptr,
-                               struct X509 **x509_pp,
-                               void *_cb,
-                               void *_u);
+struct X509 *PEM_read_bio_X509(struct BIO *bio_ptr, struct X509 **x509_pp,
+                               void *_cb, void *_u);
 
 /*
  `PEM_read_X509` reads a X509 certificate from *file*.
@@ -1451,13 +1435,11 @@ struct X509 *PEM_read_bio_X509(struct BIO *bio_ptr,
  X509 *PEM_read_X509(FILE *fp, X509 **x, pem_password_cb *cb, void *u);
  ```
  */
-struct X509 *PEM_read_X509(FILE *file_ptr,
-                           struct X509 **x509_pp,
-                           void *_cb,
+struct X509 *PEM_read_X509(FILE *file_ptr, struct X509 **x509_pp, void *_cb,
                            void *_u);
 
 #ifdef __cplusplus
-} // extern "C"
-#endif // __cplusplus
+}  // extern "C"
+#endif  // __cplusplus
 
 #endif /* TABBL_SSL_H_ */
