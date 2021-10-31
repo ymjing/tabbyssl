@@ -1,0 +1,11 @@
+actions:
+  - name: "TabbySSL Tests"
+    triggers:
+      push:
+        branches:
+          - "main"
+      pull_request:
+        branches:
+          - "main"
+    bazel_commands:
+      - "test :tabbyssl_test --build_metadata=ROLE=CI --bes_backend=grpcs://cloud.buildbuddy.io --bes_results_url=https://app.buildbuddy.io/invocation/"
