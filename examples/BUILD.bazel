@@ -13,16 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-licenses(["notice"])
+load("@rules_rust//rust:defs.bzl", "rust_binary")
 
-exports_files(["LICENSE"])
-
-cc_library(
-    name = "tabbyssl",
-    hdrs = ["include/tabbyssl/ssl.h"],
-    includes = ["include"],
-    visibility = ["//visibility:public"],
+rust_binary(
+    name = "example_simple_client_rs",
+    srcs = [
+        "simple_client.rs",
+    ],
     deps = [
-        "//src:tabbyssl_dylib",
+        "//cargo:libc",
+        "//cargo:webpki_roots",
+        "//src:tabbyssl_rlib",
+    ],
+)
+
+cc_binary(
+    name = "example_simple_client_c",
+    srcs = [
+        "simple_client.c",
+    ],
+    deps = [
+        "//:tabbyssl",
     ],
 )

@@ -13,16 +13,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-licenses(["notice"])
+load("@rules_rust//rust:defs.bzl", "rust_clippy", "rust_test", "rustfmt_test")
 
-exports_files(["LICENSE"])
-
-cc_library(
-    name = "tabbyssl",
-    hdrs = ["include/tabbyssl/ssl.h"],
-    includes = ["include"],
-    visibility = ["//visibility:public"],
+rust_test(
+    name = "unit_tests",
+    srcs = glob(["**/*.rs"]),
+    data = ["certs"],
     deps = [
-        "//src:tabbyssl_dylib",
+        "//cargo:libc",
+        "//cargo:rustls",
+        "//cargo:rustls_pemfile",
+        "//src:tabbyssl_rlib",
+    ],
+)
+
+rustfmt_test(
+    name = "rustfmt",
+    targets = [
+        "//src:tabbyssl_rlib",
+        "//tests:unit_tests",
+    ],
+)
+
+rust_clippy(
+    name = "clippy",
+    testonly = True,
+    deps = [
+        "//src:tabbyssl_rlib",
+        "//tests:unit_tests",
     ],
 )

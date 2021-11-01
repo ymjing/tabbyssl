@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2019-2021, Yiming Jing
+ * Copyright (c) 2017-2019, The MesaLink Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 use libc::{self, c_char, c_void};
 use std::{fs, ptr};
 use tabbyssl::libcrypto::bio::OpenFileStream;
@@ -136,7 +153,7 @@ fn bio_file_set_fp() {
 
 #[test]
 fn bio_file_new_from_path() {
-    let path_ptr = b"tests/certs/deleteme\0".as_ptr() as *const c_char;
+    let path_ptr = b"/tmp/deleteme\0".as_ptr() as *const c_char;
 
     let bio_ptr_f = BIO_new(BIO_s_file());
     assert_ne!(bio_ptr_f, ptr::null_mut());
@@ -154,5 +171,5 @@ fn bio_file_new_from_path() {
     assert_eq!(ret, CRYPTO_SUCCESS);
 
     BIO_free(bio_ptr_f);
-    let _ = fs::remove_file("tests/certs/deleteme");
+    let _ = fs::remove_file("/tmp/deleteme");
 }

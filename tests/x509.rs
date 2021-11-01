@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2019-2021, Yiming Jing
+ * Copyright (c) 2017-2019, The MesaLink Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 use libc::{c_char, c_int};
 use rustls::Certificate;
 use rustls_pemfile as pemfile;
@@ -9,7 +26,7 @@ use tabbyssl::libssl::x509::*;
 fn x509_get_subject_name_and_alt_names() {
     let mut certs_io = io::BufReader::new(fs::File::open("tests/certs/end.fullchain").unwrap());
     let certs = pemfile::certs(&mut certs_io).unwrap();
-    assert_eq!(true, certs.len() > 0);
+    assert!(!certs.is_empty());
 
     let cert = certs[0].to_owned();
     let x509 = X509::new(Certificate(cert));
@@ -45,7 +62,7 @@ fn x509_get_subject_name_and_alt_names() {
     let name_stack_ptr = X509_get_alt_subject_names(x509_ptr);
 
     let name_count = sk_X509_NAME_num(name_stack_ptr) as usize;
-    assert_eq!(true, name_count > 0);
+    assert!(name_count > 0);
     for index in 0..name_count {
         let name_ptr = sk_X509_NAME_value(name_stack_ptr, index as c_int);
         assert_ne!(name_ptr, ptr::null_mut());

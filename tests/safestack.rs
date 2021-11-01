@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2019-2021, Yiming Jing
+ * Copyright (c) 2017-2019, The MesaLink Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 use libc::c_int;
 use rustls::Certificate;
 use rustls_pemfile as pemfile;
@@ -12,7 +29,7 @@ fn x509_sk() {
     let mut certs_io = io::BufReader::new(fs::File::open("tests/certs/end.fullchain").unwrap());
     let certs = pemfile::certs(&mut certs_io).unwrap();
     let certs_count = certs.len();
-    assert_eq!(true, certs_count > 0);
+    assert!(certs_count > 0);
     for cert in certs.into_iter() {
         let x509 = X509::new(Certificate(cert));
         let x509_ptr = Box::into_raw(Box::new(x509)) as *mut X509;
