@@ -16,21 +16,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v1
-      
-      - name: Install bazelisk
-        run: |
-          curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/v1.1.0/bazelisk-linux-amd64"
-          mkdir -p "${GITHUB_WORKSPACE}/bin/"
-          mv bazelisk-linux-amd64 "${GITHUB_WORKSPACE}/bin/bazel"
-          chmod +x "${GITHUB_WORKSPACE}/bin/bazel"
-      
-      - name: rustfmt
-        run: |
-          "${GITHUB_WORKSPACE}/bin/bazel" test :rustfmt
-
-      - name: clippy
-        run: |
-          "${GITHUB_WORKSPACE}/bin/bazel" build :clippy 
              
       - name: Check BUILD.bazel and WORKSPACE
         run: |

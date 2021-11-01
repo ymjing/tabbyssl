@@ -1,0 +1,73 @@
+# Copyright (c) 2019-2021, Yiming Jing
+# Copyright (c) 2017-2019, The MesaLink Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_shared_library")
+
+package(default_visibility = [
+    "//:__pkg__",
+    "//examples:__subpackages__",
+    "//tests:__subpackages__",
+])
+
+rust_library(
+    name = "tabbyssl_rlib",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+        "tls12",
+        "error_strings",
+        "verifier",
+    ],
+    crate_name = "tabbyssl",
+    deps = [
+        "//cargo:base64",
+        "//cargo:bitflags",
+        "//cargo:env_logger",
+        "//cargo:lazy_static",
+        "//cargo:libc",
+        "//cargo:ring",
+        "//cargo:rustls",
+        "//cargo:rustls_pemfile",
+        "//cargo:sct",
+        "//cargo:thiserror",
+        "//cargo:untrusted",
+        "//cargo:webpki",
+        "//cargo:webpki_roots",
+    ],
+)
+
+rust_shared_library(
+    name = "tabbyssl_dylib",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+        "tls12",
+        "error_strings",
+        "verifier",
+    ],
+    deps = [
+        "//cargo:base64",
+        "//cargo:bitflags",
+        "//cargo:env_logger",
+        "//cargo:lazy_static",
+        "//cargo:libc",
+        "//cargo:ring",
+        "//cargo:rustls",
+        "//cargo:rustls_pemfile",
+        "//cargo:sct",
+        "//cargo:thiserror",
+        "//cargo:untrusted",
+        "//cargo:webpki",
+        "//cargo:webpki_roots",
+    ],
+)
