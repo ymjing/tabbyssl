@@ -33,13 +33,13 @@ $ bazel build :tabbyssl
 ## Running examples
 
 ```
-$ bazel run :example_simple_client_c google.com
+$ bazel run examples:example_simple_client_c google.com
 ```
 
 ## Running integration tests
 
 ```
-$ bazel run :tabbyssl_test
+$ bazel test tests:integration_tests
 ```
 
 ## Maintainer

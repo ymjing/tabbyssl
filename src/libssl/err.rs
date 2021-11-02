@@ -28,7 +28,7 @@ thread_local! {
 pub enum Error {
     #[error("No error")]
     None,
-    #[error("NULL pointer")]
+    #[error("Null pointer")]
     NullPointer,
     #[error("Malformed objects")]
     MalformedObject,
