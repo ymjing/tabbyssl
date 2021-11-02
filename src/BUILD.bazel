@@ -1,5 +1,4 @@
 # Copyright (c) 2019-2021, Yiming Jing
-# Copyright (c) 2017-2019, The MesaLink Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,11 +14,7 @@
 
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_shared_library")
 
-package(default_visibility = [
-    "//:__pkg__",
-    "//examples:__subpackages__",
-    "//tests:__subpackages__",
-])
+package(default_visibility = ["//:__subpackages__"])
 
 rust_library(
     name = "tabbyssl_rlib",
@@ -48,7 +43,7 @@ rust_library(
 )
 
 rust_shared_library(
-    name = "tabbyssl_dylib",
+    name = "tabbyssl_cdylib",
     srcs = glob(["**/*.rs"]),
     crate_features = [
         "tls12",
@@ -69,5 +64,13 @@ rust_shared_library(
         "//cargo:untrusted",
         "//cargo:webpki",
         "//cargo:webpki_roots",
+    ],
+)
+
+cc_library(
+    name = "tabbyssl_dylib",
+    deps = [
+        "//include:tabbyssl_headers",
+        "//src:tabbyssl_cdylib",
     ],
 )

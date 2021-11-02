@@ -16,7 +16,7 @@
 load("@rules_rust//rust:defs.bzl", "rust_clippy", "rust_test", "rustfmt_test")
 
 rust_test(
-    name = "unit_tests",
+    name = "integration_tests",
     srcs = glob(["**/*.rs"]),
     data = ["certs"],
     deps = [
@@ -31,7 +31,7 @@ rustfmt_test(
     name = "rustfmt",
     targets = [
         "//src:tabbyssl_rlib",
-        "//tests:unit_tests",
+        "//tests:integration_tests",
     ],
 )
 
@@ -40,6 +40,6 @@ rust_clippy(
     testonly = True,
     deps = [
         "//src:tabbyssl_rlib",
-        "//tests:unit_tests",
+        "//tests:integration_tests",
     ],
 )
