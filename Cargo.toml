@@ -27,7 +27,7 @@ verifier = ["rustls/dangerous_configuration"]
 [dependencies]
 rustls = { version = "0.20.0", default-features = false }
 webpki = "0.22.0"
-webpki-roots = "0.22.1"
+webpki-roots = "1.0.10"
 sct = "0.7.0"
 libc = "0.2.105"
 lazy_static = "1.4.0"
